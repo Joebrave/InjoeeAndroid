@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Injoee</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_my_game">My_game</string>
+
+    <!-- 主界面 -->
+
+    <string name="my_game_title">My Games</string>
+    <string name="featured_game_title">Featured Games</string>
+    <string name="game_download">Download</string>
+    <string name="game_play">Play</string>
+    <string name="game_download_pause">Pause</string>
+    <string name="game_download_continue">Continue</string>
+    <string name="game_download_installed">Install</string>
+    <string name="action_bar_feedback">Feedback</string>
+
+    <!-- test String -->
+
+    <string name="test_game_name_short">Angry Bird</string>
+    <string name="test_game_type">Shooting Game</string>
+    <string name="test_game_size">12M</string>
+    <string name="title_activity_game_detail">GameDetail</string>
+    <string name="test_reputation_num">200</string>
+
+</resources>
