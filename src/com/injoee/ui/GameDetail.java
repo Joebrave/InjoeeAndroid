@@ -1,5 +1,9 @@
 package com.injoee.ui;
 
+import java.io.IOException;
+
+import org.json.JSONException;
+
 import com.injoee.R;
 import com.injoee.R.layout;
 import com.injoee.R.menu;
@@ -26,11 +30,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class GameDetail extends Activity {
-
-	private String mGameID = null;
-	private GameInfoDetail mGameDetail = new GameInfoDetail();
-	private static GameDetailViewHolder mGameDetailViewHolder = new GameDetailViewHolder();
-
+	private GameInfoDetail mGameDetail;
+	private static GameDetailViewHolder sGameDetailViewHolder;
+	private FetchGameTask mFetchGameTask = new FetchGameTask();
+	
 	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -43,30 +46,32 @@ public class GameDetail extends Activity {
 
 		Intent intent = getIntent();
 
-		mGameID = intent.getStringExtra("game_id");
-
-		mGameDetailViewHolder.mivGameIcon = (ImageView) findViewById(R.id.iv_game_detail_icon);
-		mGameDetailViewHolder.mtvGameType = (TextView) findViewById(R.id.tv_game_type_detail);
-		mGameDetailViewHolder.mtvGamePackageSize = (TextView) findViewById(R.id.tv_game_size_detail);
-		mGameDetailViewHolder.mivScreenShot1 = (ImageView) findViewById(R.id.iv_image1);
-		mGameDetailViewHolder.mivScreenShot2 = (ImageView) findViewById(R.id.iv_image2);
-		mGameDetailViewHolder.mivScreenShot3 = (ImageView) findViewById(R.id.iv_image3);
-		mGameDetailViewHolder.mivScreenShot4 = (ImageView) findViewById(R.id.iv_image4);
-		mGameDetailViewHolder.mtvDescription = (TextView) findViewById(R.id.tv_game_detail_description);
-		mGameDetailViewHolder.mtvReputationGoodNum = (TextView) findViewById(R.id.tv_reputation_good_num);
-		mGameDetailViewHolder.mtvReputationBadNum = (TextView) findViewById(R.id.tv_reputation_bad_num);
-		mGameDetailViewHolder.mbtnReputationBad = (LinearLayout) findViewById(R.id.ll_reputation_bad);
-		mGameDetailViewHolder.mbtnReputationGood = (LinearLayout) findViewById(R.id.ll_reputation_good);
-
-		new FetchGameTask().execute(mGameID);
+		String gameID = intent.getStringExtra("game_id");
+		if(sGameDetailViewHolder == null) {
+			sGameDetailViewHolder = new GameDetailViewHolder();
+			sGameDetailViewHolder.ivGameIcon = (ImageView) findViewById(R.id.iv_game_detail_icon);
+			sGameDetailViewHolder.tvGameType = (TextView) findViewById(R.id.tv_game_type_detail);
+			sGameDetailViewHolder.tvGamePackageSize = (TextView) findViewById(R.id.tv_game_size_detail);
+			sGameDetailViewHolder.ivScreenShot1 = (ImageView) findViewById(R.id.iv_image1);
+			sGameDetailViewHolder.ivScreenShot2 = (ImageView) findViewById(R.id.iv_image2);
+			sGameDetailViewHolder.ivScreenShot3 = (ImageView) findViewById(R.id.iv_image3);
+			sGameDetailViewHolder.ivScreenShot4 = (ImageView) findViewById(R.id.iv_image4);
+			sGameDetailViewHolder.tvDescription = (TextView) findViewById(R.id.tv_game_detail_description);
+			sGameDetailViewHolder.tvReputationGoodNum = (TextView) findViewById(R.id.tv_reputation_good_num);
+			sGameDetailViewHolder.tvReputationBadNum = (TextView) findViewById(R.id.tv_reputation_bad_num);
+			sGameDetailViewHolder.btnReputationBad = (LinearLayout) findViewById(R.id.ll_reputation_bad);
+			sGameDetailViewHolder.btnReputationGood = (LinearLayout) findViewById(R.id.ll_reputation_good);
+		}
+		
+		mFetchGameTask.execute(gameID);
 		// String featured_Game_Name = intent.getStringExtra("game_title");
 
 		// Toast.makeText(GameDetail.this, featured_Game_Name,
 		// Toast.LENGTH_SHORT).show();
 
-		mGameDetailViewHolder.mbtnReputationBad
+		sGameDetailViewHolder.btnReputationBad
 				.setOnClickListener(reputationVoterClickListener);
-		mGameDetailViewHolder.mbtnReputationGood
+		sGameDetailViewHolder.btnReputationGood
 				.setOnClickListener(reputationVoterClickListener);
 
 	}
@@ -76,16 +81,18 @@ public class GameDetail extends Activity {
 		@Override
 		public void onClick(View v) {
 			// TODO Auto-generated method stub
+			if(mGameDetail == null) return;
+			
 			ReputationVoteParam voteParam = new ReputationVoteParam();
-			voteParam.mGameID = mGameID;
+			voteParam.gameID = mGameDetail.gameId;
 
 			switch (v.getId()) {
 			case R.id.ll_reputation_bad:
-				voteParam.result = 1;
+				voteParam.voteType = ReputationVoteParam.TYPE_BAD;
 				new VoteForReputation().execute(voteParam);
 				break;
 			case R.id.ll_reputation_good:
-				voteParam.result = 0;
+				voteParam.voteType = ReputationVoteParam.TYPE_GOOD;
 				new VoteForReputation().execute(voteParam);
 				break;
 			}
@@ -107,39 +114,48 @@ public class GameDetail extends Activity {
 		protected GameInfoDetail doInBackground(String... params) {
 			// TODO Auto-generated method stub
 			GameDetailsRequester gameInfoDetail = new GameDetailsRequester();
+			GameInfoDetail gameDetail = new GameInfoDetail();
 			try {
-				mGameDetail = gameInfoDetail.doRequest(params[0]);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				gameDetail = gameInfoDetail.doRequest(params[0]);
+			} catch (JSONException jsonEx) {
+				//TODO:
+				return null;
+			} catch (IOException ioEx) {
+				//TODO:
+				return null;
 			}
-
-			return mGameDetail;
+			
+			return gameDetail;
 		}
 
 		@Override
 		protected void onPostExecute(GameInfoDetail gameInfoDetail) {
 			// TODO Auto-generated method stub
-
+			mGameDetail = gameInfoDetail;
+			
+			if(gameInfoDetail == null) {
+				//TODO: Network exception
+			}
+			
 			ImageLoader imageLoader = new ImageLoader(getApplicationContext());
 
-			imageLoader.DisplayImage(gameInfoDetail.getGameIcon(),
-					mGameDetailViewHolder.mivGameIcon, false);
+			imageLoader.displayImage(gameInfoDetail.getGameIcon(),
+					sGameDetailViewHolder.ivGameIcon, false);
 
-			ScreenShotLoader(gameInfoDetail.gameScreenShots, imageLoader);
+			loadscreenShots(gameInfoDetail.gameScreenShots, imageLoader);
 
-			mGameDetailViewHolder.mtvDescription
+			sGameDetailViewHolder.tvDescription
 					.setText(gameInfoDetail.gameDescription);
 
-			mGameDetailViewHolder.mtvGamePackageSize
+			sGameDetailViewHolder.tvGamePackageSize
 					.setText(gameInfoDetail.gamePackageSize);
 
-			mGameDetailViewHolder.mtvGameType.setText(gameInfoDetail.gameType);
+			sGameDetailViewHolder.tvGameType.setText(gameInfoDetail.gameType);
 
-			mGameDetailViewHolder.mtvReputationBadNum.setText(String
+			sGameDetailViewHolder.tvReputationBadNum.setText(String
 					.valueOf(gameInfoDetail.gameBadVote));
 
-			mGameDetailViewHolder.mtvReputationGoodNum.setText(String
+			sGameDetailViewHolder.tvReputationGoodNum.setText(String
 					.valueOf(gameInfoDetail.gameGoodVote));
 
 		}
@@ -156,12 +172,12 @@ public class GameDetail extends Activity {
 
 			ReputationResult reputationResult = new ReputationResult();
 
-			switch (voteParam[0].result) {
+			switch (voteParam[0].voteType) {
 			case 0: // good
 				try {
 					reputationResult.result = voteForReputation
-							.goodVoted(voteParam[0].mGameID);
-					reputationResult.goodorBad = 0;
+							.goodVoted(voteParam[0].gameID);
+					reputationResult.voteType = ReputationVoteParam.TYPE_GOOD;
 					return reputationResult;
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
@@ -172,9 +188,9 @@ public class GameDetail extends Activity {
 			case 1: // bad
 				try {
 					reputationResult.result = voteForReputation
-							.badVoted(voteParam[0].mGameID);
+							.badVoted(voteParam[0].gameID);
 
-					reputationResult.goodorBad = 1;
+					reputationResult.voteType = ReputationVoteParam.TYPE_BAD;
 
 					return reputationResult;
 				} catch (Exception e) {
@@ -186,7 +202,7 @@ public class GameDetail extends Activity {
 			}
 
 			reputationResult.result = false;
-			reputationResult.goodorBad = 2;
+			reputationResult.voteType = ReputationVoteParam.NONE;
 
 			return reputationResult;
 		}
@@ -202,57 +218,48 @@ public class GameDetail extends Activity {
 
 				int num = 0;
 
-				if (result.goodorBad == 0) {
-					num = Integer
-							.valueOf((String) mGameDetailViewHolder.mtvReputationGoodNum
-									.getText()) + 1;
-
-					mGameDetailViewHolder.mtvReputationGoodNum.setText(String
-							.valueOf(num));
-					
-				} else if (result.goodorBad == 1) {
-					num = Integer
-							.valueOf((String) mGameDetailViewHolder.mtvReputationBadNum
-									.getText()) + 1;
-
-					mGameDetailViewHolder.mtvReputationBadNum.setText(String
-							.valueOf(num));
+				if (result.voteType == ReputationVoteParam.TYPE_GOOD) {
+					mGameDetail.gameGoodVote++;
+					sGameDetailViewHolder.tvReputationGoodNum.setText(String.valueOf(mGameDetail.gameGoodVote));
+				} else if (result.voteType == ReputationVoteParam.TYPE_BAD) {
+					mGameDetail.gameBadVote++;
+					sGameDetailViewHolder.tvReputationBadNum.setText(String.valueOf(mGameDetail.gameBadVote));
 				}
 			}
 		}
 
 	}
 
-	private boolean ScreenShotLoader(String[] screenshots,
+	private boolean loadscreenShots(String[] screenshots,
 			ImageLoader imageLoader) {
 
 		Log.e("screenshot length is ", Integer.toString(screenshots.length));
 
 		if (screenshots.length != 0 && screenshots.length <= 4) {
 			if (screenshots.length == 1) {
-				imageLoader.DisplayImage(screenshots[0],
-						mGameDetailViewHolder.mivScreenShot1, false);
+				imageLoader.displayImage(screenshots[0],
+						sGameDetailViewHolder.ivScreenShot1, false);
 			} else if (screenshots.length == 2) {
-				imageLoader.DisplayImage(screenshots[0],
-						mGameDetailViewHolder.mivScreenShot1, false);
-				imageLoader.DisplayImage(screenshots[1],
-						mGameDetailViewHolder.mivScreenShot2, false);
+				imageLoader.displayImage(screenshots[0],
+						sGameDetailViewHolder.ivScreenShot1, false);
+				imageLoader.displayImage(screenshots[1],
+						sGameDetailViewHolder.ivScreenShot2, false);
 			} else if (screenshots.length == 3) {
-				imageLoader.DisplayImage(screenshots[0],
-						mGameDetailViewHolder.mivScreenShot1, false);
-				imageLoader.DisplayImage(screenshots[1],
-						mGameDetailViewHolder.mivScreenShot2, false);
-				imageLoader.DisplayImage(screenshots[2],
-						mGameDetailViewHolder.mivScreenShot3, false);
+				imageLoader.displayImage(screenshots[0],
+						sGameDetailViewHolder.ivScreenShot1, false);
+				imageLoader.displayImage(screenshots[1],
+						sGameDetailViewHolder.ivScreenShot2, false);
+				imageLoader.displayImage(screenshots[2],
+						sGameDetailViewHolder.ivScreenShot3, false);
 			} else {
-				imageLoader.DisplayImage(screenshots[0],
-						mGameDetailViewHolder.mivScreenShot1, false);
-				imageLoader.DisplayImage(screenshots[1],
-						mGameDetailViewHolder.mivScreenShot2, false);
-				imageLoader.DisplayImage(screenshots[2],
-						mGameDetailViewHolder.mivScreenShot3, false);
-				imageLoader.DisplayImage(screenshots[3],
-						mGameDetailViewHolder.mivScreenShot4, false);
+				imageLoader.displayImage(screenshots[0],
+						sGameDetailViewHolder.ivScreenShot1, false);
+				imageLoader.displayImage(screenshots[1],
+						sGameDetailViewHolder.ivScreenShot2, false);
+				imageLoader.displayImage(screenshots[2],
+						sGameDetailViewHolder.ivScreenShot3, false);
+				imageLoader.displayImage(screenshots[3],
+						sGameDetailViewHolder.ivScreenShot4, false);
 			}
 		}
 
@@ -260,28 +267,33 @@ public class GameDetail extends Activity {
 	}
 
 	static class GameDetailViewHolder {
-		private ImageView mivGameIcon;
-		private TextView mtvGameType;
-		private TextView mtvGamePackageSize;
-		private ImageView mivScreenShot1;
-		private ImageView mivScreenShot2;
-		private ImageView mivScreenShot3;
-		private ImageView mivScreenShot4;
-		private TextView mtvDescription;
-		private TextView mtvReputationGoodNum;
-		private TextView mtvReputationBadNum;
-		private LinearLayout mbtnReputationGood;
-		private LinearLayout mbtnReputationBad;
+		private ImageView ivGameIcon;
+		private TextView tvGameType;
+		private TextView tvGamePackageSize;
+		private ImageView ivScreenShot1;
+		private ImageView ivScreenShot2;
+		private ImageView ivScreenShot3;
+		private ImageView ivScreenShot4;
+		private TextView tvDescription;
+		private TextView tvReputationGoodNum;
+		private TextView tvReputationBadNum;
+		private LinearLayout btnReputationGood;
+		private LinearLayout btnReputationBad;
 	}
 
 	static class ReputationVoteParam {
-		private String mGameID;
-		private int result; // 0 stands for good, 1 stands for bad
+		public static int NONE = -1;
+
+		public static int TYPE_GOOD = 0;
+		public static int TYPE_BAD = 1;
+		
+		private String gameID;
+		private int voteType; 
 	}
 
 	static class ReputationResult {
 		private boolean result;
-		private int goodorBad;
+		private int voteType;
 	}
 
 }

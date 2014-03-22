@@ -171,7 +171,7 @@ public class LoaderAdapter extends BaseAdapter {
 				viewHolder.tv_FeaturedGameSize.setText(gameInfo
 						.getGamePackageSize());
 				viewHolder.tv_FeaturedGameID.setText(gameInfo.getGameId());
-				mImageLoader.DisplayImage(gameInfo.getGameIcon(),
+				mImageLoader.displayImage(gameInfo.getGameIcon(),
 						viewHolder.iv_FeaturedGameIcon, false);
 			}
 		}

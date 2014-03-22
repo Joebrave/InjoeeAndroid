@@ -16,63 +16,6 @@ public class Voter {
 	public int good;
 	}
 
-	public Vote getVotes(String gameId) throws Exception {
-		Vote voteNum = new Vote();
-
-		String path = "http://www.injoee.com/games/detail.php?";
-
-		String param = "id=" + gameId;
-
-		path = path + param;
-
-		URL url = new URL(path);
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-		conn.setDoInput(true); // ÔÊĞí½ÓÊÕ·şÎñÆ÷Êı¾İ
-		conn.setRequestMethod("GET");
-		conn.setConnectTimeout(5000);
-
-		if (conn.getResponseCode() == 200) {
-			InputStream is = conn.getInputStream();
-
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			byte[] buffer = new byte[1024];
-			int len = 0;
-
-			while ((len = is.read(buffer)) != -1) {
-				baos.write(buffer, 0, len);
-			}
-
-			String json = baos.toString();
-
-			Log.e("json string result is-", json);
-
-			baos.close();
-			is.close();
-
-			JSONObject jsonObject = new JSONObject(json);
-			int errorCode = jsonObject.getInt("error_code");
-
-			if (errorCode == 1000) {
-				return null;
-			}
-
-			String jsonGameDetail = jsonObject.getString("game_detail");
-
-			JSONObject jsonObjectGameDetail = new JSONObject(jsonGameDetail);
-
-			voteNum.good = jsonObjectGameDetail.getInt("game_good_votes");
-			
-			Log.e("good votes num is -- ", String.valueOf(voteNum.good));
-
-			voteNum.bad = jsonObjectGameDetail.getInt("game_bad_votes");
-			
-			Log.e("bad votes num is -- ", String.valueOf(voteNum.bad));
-		}
-
-		return voteNum;
-	}
-
 	public boolean badVoted(String gameId) throws Exception {
 
 		String path = "http://www.injoee.com/games/votes.php?id=";
@@ -82,7 +25,7 @@ public class Voter {
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // ÔÊĞí½ÓÊÕ·şÎñÆ÷Êı¾İ
+		conn.setDoInput(true); // å…è®¸æ¥æ”¶æœåŠ¡å™¨æ•°æ®
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 
@@ -125,7 +68,7 @@ public class Voter {
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // ÔÊĞí½ÓÊÕ·şÎñÆ÷Êı¾İ
+		conn.setDoInput(true); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 

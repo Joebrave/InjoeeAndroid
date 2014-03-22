@@ -37,7 +37,7 @@ public class ImageLoader {
 	}
 
 	// 最主要的方法
-	public void DisplayImage(String url, ImageView imageView, boolean isLoadOnlyFromCache) {
+	public void displayImage(String url, ImageView imageView, boolean isLoadOnlyFromCache) {
 		imageViews.put(imageView, url);
 		// 先从内存缓存中查找
 

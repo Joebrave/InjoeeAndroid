@@ -1,26 +1,17 @@
 package com.injoee.webservice;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.util.Scanner;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.os.Build;
 import android.util.Log;
 
-import com.injoee.model.GameInfo;
 import com.injoee.model.GameInfoDetail;
-import com.injoee.ui.GameDetail;
 
 public class GameDetailsRequester {
 	public GameDetailsRequester() {
@@ -28,7 +19,7 @@ public class GameDetailsRequester {
 	}
 
 	// TODO: please use HttpURLConnection
-	public GameInfoDetail doRequest(String gameId) throws Exception {
+	public GameInfoDetail doRequest(String gameId) throws IOException, JSONException {
 		// TODO: to be implemented
 
 		GameInfoDetail gameDetailItem = new GameInfoDetail();
@@ -42,7 +33,7 @@ public class GameDetailsRequester {
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // ‘ –ÌΩ” ’∑˛ŒÒ∆˜ ˝æ›
+		conn.setDoInput(true); // ÂÖÅËÆ∏Êé•Êî∂ÊúçÂä°Âô®Êï∞ÊçÆ
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 
@@ -93,9 +84,6 @@ public class GameDetailsRequester {
 			gameDetailItem
 					.setGameScreenShots(JsonStringScreenShotSplit(jsonObjectGameDetail
 							.getString("game_screenshots")));
-
-			String[] textString = JsonStringScreenShotSplit(jsonObjectGameDetail
-					.getString("game_screenshots"));
 
 			gameDetailItem.setGameDescription(jsonObjectGameDetail
 					.getString("game_description"));
