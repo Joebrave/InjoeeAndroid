@@ -25,7 +25,7 @@ public class Voter {
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // 允许接收服务器数据
+		conn.setDoInput(true); // 鍏佽鎺ユ敹鏈嶅姟鍣ㄦ暟鎹�
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 
@@ -68,7 +68,7 @@ public class Voter {
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // ������շ��������
+		conn.setDoInput(true); // 锟斤拷锟斤拷锟斤拷辗锟斤拷锟斤拷锟斤拷锟斤拷
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 

@@ -29,20 +29,20 @@ public class GameListRequester {
 		List<GameInfo> list = new ArrayList<GameInfo>();
 
 		String path = "http://www.injoee.com/games/list.php?";
-		String param = "start=" + start + "&count=" + count; // 设置参数
+		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
 
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // 允许接收服务器数据
+		conn.setDoInput(true); // 锟斤拷锟斤拷锟斤拷辗锟斤拷锟斤拷锟斤拷锟斤拷
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 
 		if (conn.getResponseCode() == 200) {
 
 			InputStream is = conn.getInputStream();
-			// 将输入流转换成字符串
+			// to get the stream
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			byte[] buffer = new byte[1024];
 			int len = 0;
@@ -57,7 +57,7 @@ public class GameListRequester {
 			baos.close();
 			is.close();
 			
-			// json处理
+			// json
 			JSONObject jsonObject = new JSONObject(json);
 			int errorCode = jsonObject.getInt("error_code");
 

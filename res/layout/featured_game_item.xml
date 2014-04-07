@@ -79,6 +79,7 @@
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="85dp"
                     android:layout_height="7dp"
+                    android:layout_marginLeft="2dp"
                     android:layout_gravity="center_vertical"
                     android:max="100"
                     android:progress="100"
@@ -112,5 +113,5 @@
         android:layout_height="wrap_content"
         android:visibility="gone"
         />
-
+    
 </RelativeLayout>

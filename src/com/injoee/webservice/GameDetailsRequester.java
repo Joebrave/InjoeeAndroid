@@ -33,7 +33,7 @@ public class GameDetailsRequester {
 		URL url = new URL(path);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		conn.setDoInput(true); // 允许接收服务器数据
+		conn.setDoInput(true); // 
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(5000);
 
