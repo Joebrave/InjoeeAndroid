@@ -3,24 +3,12 @@ package com.injoee.ui;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.injoee.R;
-import com.injoee.imageloader.ImageLoader;
-import com.injoee.model.GameInfo;
-import com.injoee.model.GameInfo.DownloadStatus;
-import com.injoee.providers.DownloadManager;
-import com.injoee.providers.DownloadManager.Request;
-import com.injoee.providers.downloads.DownloadService;
-import com.mozillaonline.providers.downloads.ui.DownloadList;
-
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,6 +21,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.injoee.R;
+import com.injoee.imageloader.ImageLoader;
+import com.injoee.model.GameInfo;
+import com.injoee.model.GameInfo.DownloadStatus;
+import com.injoee.providers.DownloadManager;
+import com.injoee.providers.DownloadManager.Request;
+import com.injoee.providers.downloads.DownloadService;
 
 public class LoaderAdapter extends BaseAdapter {
 
@@ -446,11 +442,6 @@ public class LoaderAdapter extends BaseAdapter {
 		context.startService(intent);
 	}
 
-	private void showDownloadList() {
-		Intent intent = new Intent();
-		intent.setClass(mContext, DownloadList.class);
-		mContext.startActivity(intent);
-	}
 	private ContentObserver mObserver;
 	public void unregisterObserver(ContentObserver observer) {
 		this.mDownloadsCursor.unregisterContentObserver(observer);
