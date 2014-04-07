@@ -10,5 +10,9 @@
     <color name="reputation_button_pressed">#f3f3f3</color>
     <color name="reputation_num">#5e5e5e</color>
     <color name="button_detail_download_normal">#e2e1e1</color>
+    <color name="black_overlay">#66000000</color>
+    <color name="dark_slate_gray">#2F4F4F</color>
+    <color name="gray_2">#AFAFAF</color>
+    <color name="gray_1">#C0C0C0</color>
 
 </resources>

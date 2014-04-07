@@ -44,8 +44,10 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name" >
         <activity
-            android:name="com.injoee.ui.MainActivity"
-            android:label="@string/app_name" >
+            android:name="com.injoee.ui.StartPageActivity"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.NoTitleBar"
+             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 				<!-- 
@@ -88,6 +90,10 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
+        <activity
+            android:name="com.injoee.ui.MainActivity"
+            android:label="@string/app_name" >
+        </activity>
     </application>
 
 </manifest>

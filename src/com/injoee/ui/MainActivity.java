@@ -2,9 +2,11 @@ package com.injoee.ui;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
@@ -12,26 +14,49 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.format.DateFormat;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.injoee.R;
 import com.injoee.model.GameInfo;
+import com.injoee.ui.widget.LazyListView;
+import com.injoee.ui.widget.LazyListView.LazyListViewListener;
 import com.injoee.webservice.GameListRequester;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements LazyListViewListener {
 
-	protected ListView featuredgame_ListView;
-	protected ListView mygame_ListView;
+	protected LazyListView game_ListView;
+
+	protected LinearLayout llNetworkProblem;
+	protected Button btnReconnectNetwork;
 	private LoaderAdapter mAdapter;
 	private ActionBar mActionBar;
-	private int mTotal;
+	private int mTotal; // count the total number of the featured game
+	private int mCurrentLoadedGamesNum; // to count the current games number in
+										// the list;
+	private ProgressBar mProgressBar;
+
+	// Constant of the parameter
+	private final int LOAD = 0;
+	private final int REFRESH = 1;
+	private final int LOAD_MORE = 2;
+	private final int EACH_TIME_NUM = 2; // each time pull from the server;
+	private static int mActionTag = -1;
+
+	private Time mTime = new Time();
+
+	private List<GameInfo> gameList = new ArrayList<GameInfo>();
 
 	@SuppressLint("NewApi")
 	@Override
@@ -42,16 +67,20 @@ public class MainActivity extends Activity {
 
 		super.onCreate(savedInstanceState);
 
-		new FetchGamesTask().execute();
-
 		setContentView(R.layout.main_list);
+		new FetchGamesTask().execute(LOAD);
 
-		featuredgame_ListView = (ListView) findViewById(R.id.lv_FeaturedGames);
-
+		game_ListView = (LazyListView) findViewById(R.id.lv_Games);
+		game_ListView.setPullLoadEnable(true);
+		game_ListView.setLazyListViewListener(this);
 		mAdapter = new LoaderAdapter(MainActivity.this);
-		
-		featuredgame_ListView.setAdapter(mAdapter);
-		featuredgame_ListView.setOnItemClickListener(listItemClickListener);
+		llNetworkProblem = (LinearLayout) findViewById(R.id.ll_network_problem_panel);
+		btnReconnectNetwork = (Button) findViewById(R.id.btn_reconnect_internet);
+
+		game_ListView.setAdapter(mAdapter);
+		game_ListView.setOnItemClickListener(listItemClickListener);
+
+		btnReconnectNetwork.setOnClickListener(networkReconnectClickListner);
 	}
 
 	@Override
@@ -69,33 +98,118 @@ public class MainActivity extends Activity {
 			AsyncTask<Integer, Integer, List<GameInfo>> {
 
 		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+
+			super.onPreExecute();
+			mProgressBar = (ProgressBar) findViewById(R.id.pb_featured_game_progress);
+			mProgressBar.setVisibility(View.VISIBLE);
+		}
+
+		@Override
 		protected List<GameInfo> doInBackground(Integer... params) {
 			GameListRequester gameDB = new GameListRequester();
 
-			List<GameInfo> gameList = new ArrayList<GameInfo>();
+			if (params[0] == LOAD || params[0] == REFRESH) {
 
-			try {
-				gameList = gameDB.doRequest(0, 15);
+				try {
+					gameList = gameDB.doRequest(0, EACH_TIME_NUM);
 
-				Log.e("return size is!", String.valueOf(gameList.size()));
-				
-				mTotal = gameDB.total;
+					Log.e("return size is!", String.valueOf(gameList.size()));
 
-			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			return gameList;
+					mTotal = gameDB.total;
+
+					mActionTag = LOAD;
+
+				} catch (JSONException e) {
+
+					e.printStackTrace();
+
+					return null;
+
+				} catch (IOException e) {
+
+					e.printStackTrace();
+					return null;
+
+				}
+
+				return gameList;
+
+			} else if (params[0] == LOAD_MORE) {
+
+				List<GameInfo> newGameList = new ArrayList<GameInfo>();
+
+				try {
+					// add one by one
+
+					mActionTag = LOAD_MORE;
+
+					newGameList = gameDB.doRequest(mCurrentLoadedGamesNum,
+							EACH_TIME_NUM);
+
+					mTotal = gameDB.total;
+
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				} catch (IOException e) {
+					e.printStackTrace();
+					return null;
+				}
+
+				return newGameList;
+
+			} else
+				return null;
+
 		}
 
 		@Override
 		protected void onPostExecute(List<GameInfo> result) {
 			super.onPostExecute(result);
-			mAdapter.setFeaturedGames(result);
-			mAdapter.notifyDataSetInvalidated();
+
+			if (result != null) {
+
+				if (mActionTag == LOAD) {  // when load or refresh, just clear the result and update the data
+					
+					mAdapter.setFeaturedGames(result);
+					mAdapter.notifyDataSetInvalidated();
+					mCurrentLoadedGamesNum = result.size();
+					
+				}
+				else if(mActionTag == LOAD_MORE)
+				{
+					for (GameInfo gameInfo : result) {
+						gameList.add(gameInfo);
+					}
+					
+					mAdapter.setFeaturedGames(gameList);
+					mAdapter.notifyDataSetInvalidated();
+					mCurrentLoadedGamesNum = gameList.size();
+				}
+				
+				llNetworkProblem.setVisibility(View.GONE);
+				mProgressBar.setVisibility(View.GONE);
+				game_ListView.setPullLoadEnable(true);
+
+				if (mTotal == mCurrentLoadedGamesNum) // if reach the end of the list disable the footer
+				{
+					game_ListView.setPullLoadEnable(false);  
+				}
+
+			} else {
+				llNetworkProblem.setVisibility(View.VISIBLE);
+				mProgressBar.setVisibility(View.GONE);
+			}
+
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... values) {
+			// TODO Auto-generated method stub
+			super.onProgressUpdate(values);
 		}
 
 	};
@@ -122,58 +236,40 @@ public class MainActivity extends Activity {
 
 	};
 
-	// can be oblivied and abandoned
+	OnClickListener networkReconnectClickListner = new OnClickListener() {
 
-	private static final String[] URLS = {
-			"http://lh5.ggpht.com/_mrb7w4gF8Ds/TCpetKSqM1I/AAAAAAAAD2c/Qef6Gsqf12Y/s144-c/_DSC4374%20copy.jpg",
-			"http://lh5.ggpht.com/_Z6tbBnE-swM/TB0CryLkiLI/AAAAAAAAVSo/n6B78hsDUz4/s144-c/_DSC3454.jpg",
-			"http://lh3.ggpht.com/_GEnSvSHk4iE/TDSfmyCfn0I/AAAAAAAAF8Y/cqmhEoxbwys/s144-c/_MG_3675.jpg",
-			"http://lh6.ggpht.com/_Nsxc889y6hY/TBp7jfx-cgI/AAAAAAAAHAg/Rr7jX44r2Gc/s144-c/IMGP9775a.jpg",
-			"http://lh3.ggpht.com/_lLj6go_T1CQ/TCD8PW09KBI/AAAAAAAAQdc/AqmOJ7eg5ig/s144-c/Juvenile%20Gannet%20despute.jpg",
-			"http://lh6.ggpht.com/_ZN5zQnkI67I/TCFFZaJHDnI/AAAAAAAABVk/YoUbDQHJRdo/s144-c/P9250508.JPG",
-			"http://lh4.ggpht.com/_XjNwVI0kmW8/TCOwNtzGheI/AAAAAAAAC84/SxFJhG7Scgo/s144-c/0014.jpg",
-			"http://lh6.ggpht.com/_lnDTHoDrJ_Y/TBvKsJ9qHtI/AAAAAAAAG6g/Zll2zGvrm9c/s144-c/000007.JPG",
-			"http://lh6.ggpht.com/_qvCl2efjxy0/TCIVI-TkuGI/AAAAAAAAOUY/vbk9MURsv48/s144-c/DSC_0844.JPG",
-			"http://lh4.ggpht.com/_TPlturzdSE8/TBv4ugH60PI/AAAAAAAAMsI/p2pqG85Ghhs/s144-c/_MG_3963.jpg",
-			"http://lh4.ggpht.com/_4f1e_yo-zMQ/TCe5h9yN-TI/AAAAAAAAXqs/8X2fIjtKjmw/s144-c/IMG_1786.JPG",
-			"http://lh6.ggpht.com/_iFt5VZDjxkY/TB9rQyWnJ4I/AAAAAAAADpU/lP2iStizJz0/s144-c/DSCF1014.JPG",
-			"http://lh5.ggpht.com/_hepKlJWopDg/TB-_WXikaYI/AAAAAAAAElI/715k4NvBM4w/s144-c/IMG_0075.JPG",
-			"http://lh6.ggpht.com/_OfRSx6nn68g/TCzsQic_z3I/AAAAAAABOOI/5G4Kwzb2qhk/s144-c/EASTER%20ISLAND_Hanga%20Roa_31.5.08_46.JPG",
-			"http://lh6.ggpht.com/_ZGv_0FWPbTE/TB-_GLhqYBI/AAAAAAABVxs/cVEvQzt0ke4/s144-c/IMG_1288_hf.jpg",
-			"http://lh6.ggpht.com/_a29lGRJwo0E/TBqOK_tUKmI/AAAAAAAAVbw/UloKpjsKP3c/s144-c/31012332.jpg",
-			"http://lh3.ggpht.com/_55Lla4_ARA4/TB6xbyxxJ9I/AAAAAAABTWo/GKe24SwECns/s144-c/Bluebird%20049.JPG",
-			"http://lh3.ggpht.com/_iVnqmIBYi4Y/TCaOH6rRl1I/AAAAAAAA1qg/qeMerYQ6DYo/s144-c/Kwiat_100626_0016.jpg",
-			"http://lh6.ggpht.com/_QFsB_q7HFlo/TCItd_2oBkI/AAAAAAAAFsk/4lgJWweJ5N8/s144-c/3705226938_d6d66d6068_o.jpg",
-			"http://lh5.ggpht.com/_JTI0xxNrKFA/TBsKQ9uOGNI/AAAAAAAChQg/z8Exh32VVTA/s144-c/CRW_0015-composite.jpg",
-			"http://lh6.ggpht.com/_loGyjar4MMI/S-InVNkTR_I/AAAAAAAADJY/Fb5ifFNGD70/s144-c/Moving%20Rock.jpg",
-			"http://lh4.ggpht.com/_L7i4Tra_XRY/TBtxjScXLqI/AAAAAAAAE5o/ue15HuP8eWw/s144-c/opera%20house%20II.jpg",
-			"http://lh3.ggpht.com/_rfAz5DWHZYs/S9cstBTv1iI/AAAAAAAAeYA/EyZPUeLMQ98/s144-c/DSC_6425.jpg",
-			"http://lh6.ggpht.com/_iGI-XCxGLew/S-iYQWBEG-I/AAAAAAAACB8/JuFti4elptE/s144-c/norvig-polar-bear.jpg",
-			"http://lh3.ggpht.com/_M3slUPpIgmk/SlbnavqG1cI/AAAAAAAACvo/z6-CnXGma7E/s144-c/mf_003.jpg",
-			"http://lh4.ggpht.com/_loGyjar4MMI/S-InQvd_3hI/AAAAAAAADIw/dHvCFWfyHxQ/s144-c/Rainbokeh.jpg",
-			"http://lh4.ggpht.com/_yy6KdedPYp4/SB5rpK3Zv0I/AAAAAAAAOM8/mokl_yo2c9E/s144-c/Point%20Reyes%20road%20.jpg",
-			"http://lh5.ggpht.com/_6_dLVKawGJA/SMwq86HlAqI/AAAAAAAAG5U/q1gDNkmE5hI/s144-c/mobius-glow.jpg",
-			"http://lh3.ggpht.com/_QFsB_q7HFlo/TCItc19Jw3I/AAAAAAAAFs4/nPfiz5VGENk/s144-c/4551649039_852be0a952_o.jpg",
-			"http://lh6.ggpht.com/_TQY-Nm7P7Jc/TBpjA0ks2MI/AAAAAAAABcI/J6ViH98_poM/s144-c/IMG_6517.jpg",
-			"http://lh3.ggpht.com/_rfAz5DWHZYs/S9cLAeKuueI/AAAAAAAAeYU/E19G8DOlJRo/s144-c/DSC_4397_8_9_tonemapped2.jpg",
-			"http://lh4.ggpht.com/_TQY-Nm7P7Jc/TBpi6rKfFII/AAAAAAAABbg/79FOc0Dbq0c/s144-c/david_lee_sakura.jpg",
-			"http://lh3.ggpht.com/_TQY-Nm7P7Jc/TBpi8EJ4eDI/AAAAAAAABb0/AZ8Cw1GCaIs/s144-c/Hokkaido%20Swans.jpg",
-			"http://lh3.ggpht.com/_1aZMSFkxSJI/TCIjB6od89I/AAAAAAAACHM/CLWrkH0ziII/s144-c/079.jpg",
-			"http://lh5.ggpht.com/_loGyjar4MMI/S-InWuHkR9I/AAAAAAAADJE/wD-XdmF7yUQ/s144-c/Colorado%20River%20Sunset.jpg",
-			"http://lh3.ggpht.com/_0YSlK3HfZDQ/TCExCG1Zc3I/AAAAAAAAX1w/9oCH47V6uIQ/s144-c/3138923889_a7fa89cf94_o.jpg",
-			"http://lh6.ggpht.com/_K29ox9DWiaM/TAXe4Fi0xTI/AAAAAAAAVIY/zZA2Qqt2HG0/s144-c/IMG_7100.JPG",
-			"http://lh6.ggpht.com/_0YSlK3HfZDQ/TCEx16nJqpI/AAAAAAAAX1c/R5Vkzb8l7yo/s144-c/4235400281_34d87a1e0a_o.jpg",
-			"http://lh4.ggpht.com/_8zSk3OGcpP4/TBsOVXXnkTI/AAAAAAAAAEo/0AwEmuqvboo/s144-c/yosemite_forrest.jpg",
-			"http://lh4.ggpht.com/_6_dLVKawGJA/SLZToqXXVrI/AAAAAAAAG5k/7fPSz_ldN9w/s144-c/coastal-1.jpg",
-			"http://lh4.ggpht.com/_WW8gsdKXVXI/TBpVr9i6BxI/AAAAAAABhNg/KC8aAJ0wVyk/s144-c/IMG_6233_1_2-2.jpg",
-			"http://lh3.ggpht.com/_loGyjar4MMI/S-InS0tJJSI/AAAAAAAADHU/E8GQJ_qII58/s144-c/Windmills.jpg",
-			"http://lh4.ggpht.com/_loGyjar4MMI/S-InbXaME3I/AAAAAAAADHo/4gNYkbxemFM/s144-c/Frantic.jpg",
-			"http://lh5.ggpht.com/_loGyjar4MMI/S-InKAviXzI/AAAAAAAADHA/NkyP5Gge8eQ/s144-c/Rice%20Fields.jpg",
-			"http://lh3.ggpht.com/_loGyjar4MMI/S-InZA8YsZI/AAAAAAAADH8/csssVxalPcc/s144-c/Seahorse.jpg",
-			"http://lh3.ggpht.com/_syQa1hJRWGY/TBwkCHcq6aI/AAAAAAABBEg/R5KU1WWq59E/s144-c/Antelope.JPG",
-			"http://lh5.ggpht.com/_MoEPoevCLZc/S9fHzNgdKDI/AAAAAAAADwE/UAno6j5StAs/s144-c/c84_7083.jpg",
-			"http://lh4.ggpht.com/_DJGvVWd7IEc/TBpRsGjdAyI/AAAAAAAAFNw/rdvyRDgUD8A/s144-c/Free.jpg",
-			"http://lh6.ggpht.com/_iO97DXC99NY/TBwq3_kmp9I/AAAAAAABcz0/apq1ffo_MZo/s144-c/IMG_0682_cp.jpg",
-			"http://lh4.ggpht.com/_7V85eCJY_fg/TBpXudG4_PI/AAAAAAAAPEE/8cHJ7G84TkM/s144-c/20100530_120257_0273-Edit-2.jpg" };
+		@Override
+		public void onClick(View v) {
 
+			new FetchGamesTask().execute();
+
+		}
+	};
+
+	@Override
+	public void onRefresh() {
+
+		new FetchGamesTask().execute(REFRESH);
+
+		onLoad();
+
+	}
+
+	@Override
+	public void onLoadMore() {
+
+		new FetchGamesTask().execute(LOAD_MORE);
+
+		onLoad();
+	}
+
+	private void onLoad() {
+		mTime.setToNow();
+		int hour = mTime.hour;
+		int minute = mTime.minute;
+		String time = hour + ":" + minute;
+		game_ListView.stopRefresh();
+		game_ListView.stopLoadMore();
+		game_ListView.setRefreshTime(time);
+	}
 }

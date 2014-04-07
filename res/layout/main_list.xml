@@ -1,28 +1,56 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/list_gray_background"
-    android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity" >
 
-    <ListView
-        android:id="@+id/lv_LocalGames"
-        android:layout_width="fill_parent"
+    <ProgressBar
+        android:id="@+id/pb_featured_game_progress"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:dividerHeight="5dp" >
-    </ListView>
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:visibility="gone" />
 
-    <ListView
-        android:id="@+id/lv_FeaturedGames"
+    <com.injoee.ui.widget.LazyListView
+        android:id="@+id/lv_Games"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:divider="@color/list_gray_background"
         android:dividerHeight="7dp" >
-    </ListView>
+    </com.injoee.ui.widget.LazyListView>
 
-</LinearLayout>
+    <LinearLayout
+        android:id="@+id/ll_network_problem_panel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/lv_Games"
+        android:layout_centerHorizontal="true"
+        android:orientation="vertical"
+        android:visibility="gone"
+         >
+
+        <ImageView
+            android:id="@+id/iv_network_disconnected"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/network_disconnected" />
+        <Button 
+            android:id="@+id/btn_reconnect_internet"
+            android:layout_height="35dp"
+            android:layout_width="70dp"
+            android:text="@string/network_retry"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:layout_gravity="center"
+            android:background="@drawable/button_background_download"
+            />
+    </LinearLayout>
+
+</RelativeLayout>

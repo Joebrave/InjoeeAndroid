@@ -8,14 +8,19 @@ import com.injoee.imageloader.ImageLoader;
 import com.injoee.model.GameInfo;
 
 import android.content.Context;
+import android.content.res.Resources;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -25,6 +30,12 @@ public class LoaderAdapter extends BaseAdapter {
 	private List<GameInfo> mFeaturedGames;
 	private List<GameInfo> mLocalGames;
 	private ImageLoader mImageLoader;
+	private final int GAMENOTINSTALLED = 0;
+	private final int GAMEINSTALLING = 1;
+	private final int GAMEPAUSE = 2;
+	private final int GAMEINSTALLED = 3;
+	private final int STOP = 0x10000;
+	private final int GO = 0x10001;
 
 	public LoaderAdapter(Context context) {
 		this.mContext = context;
@@ -149,6 +160,16 @@ public class LoaderAdapter extends BaseAdapter {
 				viewHolder.ib_Cancel = (ImageButton) convertView
 						.findViewById(R.id.ib_download_cancel);
 
+				viewHolder.ll_GameInfoPanel = (LinearLayout) convertView
+						.findViewById(R.id.ll_game_info);
+				viewHolder.ll_GameDownloadPanel = (LinearLayout) convertView
+						.findViewById(R.id.ll_game_download_panel);
+
+				viewHolder.pb_Download = (ProgressBar) convertView
+						.findViewById(R.id.pb_featured_game_download);
+				viewHolder.ib_Cancel = (ImageButton) convertView
+						.findViewById(R.id.ib_download_cancel);
+
 				viewHolder.btn_Download.setFocusable(false);
 				viewHolder.btn_Download.setFocusableInTouchMode(false);
 
@@ -163,16 +184,130 @@ public class LoaderAdapter extends BaseAdapter {
 			// waiting to add the content of local games.
 
 		} else {
-			ViewHolder viewHolder = (ViewHolder) convertView.getTag();
+			final ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 			GameInfo gameInfo = mFeaturedGames.get(position - (localSize + 2));
+
+			// handler
+
+			
+
 			if (gameInfo != null) {
 				viewHolder.tv_FeaturedGameName.setText(gameInfo.getGameName());
 				viewHolder.tv_FeaturedGameType.setText(gameInfo.getGameType());
 				viewHolder.tv_FeaturedGameSize.setText(gameInfo
 						.getGamePackageSize());
+				viewHolder.btn_Download.setTag(GAMENOTINSTALLED);
+
 				viewHolder.tv_FeaturedGameID.setText(gameInfo.getGameId());
 				mImageLoader.displayImage(gameInfo.getGameIcon(),
 						viewHolder.iv_FeaturedGameIcon, false);
+				
+				
+				 final Handler mHandler = new Handler() {
+					public void handleMessage(Message msg) {
+						
+						if(msg.what<100&&!Thread.currentThread().isInterrupted())
+						{
+							viewHolder.pb_Download.setProgress(msg.what);
+							viewHolder.pb_Download.setVisibility(View.VISIBLE);
+						}
+						else if(msg.what==100)
+						{
+							viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
+							viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
+							viewHolder.btn_Download.setText(mContext.getResources().getString(R.string.game_play));
+							viewHolder.btn_Download.setTag(GAMEINSTALLED);
+							Thread.currentThread().interrupt();
+						}
+							
+							
+					}
+				};
+
+				viewHolder.btn_Download
+						.setOnClickListener(new OnClickListener() {
+
+							@Override
+							public void onClick(View v) {
+
+								// progressbar counter
+								Thread progressbarThread = new Thread(
+										new Runnable() {
+
+											@Override
+											public void run() {
+
+												int progressbarPrecentage = 0;
+
+												for (int i = 0; i < 20; i++) {
+													try {
+														progressbarPrecentage = (i + 1) * 5;
+														Thread.sleep(1000);
+
+														Message msg = new Message();
+														msg.what = progressbarPrecentage;
+														mHandler.sendMessage(msg);
+													
+
+													} catch (Exception e) {
+														e.printStackTrace();
+													}
+												}
+
+											}
+										});
+
+								Button btnDownload = (Button) v;
+
+								int gameStatus = (Integer) btnDownload.getTag();
+
+								if (gameStatus == GAMENOTINSTALLED) {
+									Log.e("download button touched",
+											"download button is touched");
+									btnDownload.setText(mContext.getResources().getText(R.string.game_download_pause));
+									btnDownload.setTag(GAMEINSTALLING);
+
+									viewHolder.ll_GameDownloadPanel.setVisibility(View.VISIBLE);
+									viewHolder.ll_GameInfoPanel.setVisibility(View.INVISIBLE);
+
+									viewHolder.pb_Download.setMax(100);
+									viewHolder.pb_Download.setProgress(0);
+									
+									
+									progressbarThread.start();
+
+								} else if (gameStatus == GAMEINSTALLING) {
+									btnDownload.setText(mContext.getResources().getText(R.string.game_download_pause));
+									btnDownload.setTag(GAMEPAUSE);
+								} else if (gameStatus == GAMEPAUSE) {
+									btnDownload.setText(mContext.getResources().getText(R.string.game_download_continue));
+									btnDownload.setTag(GAMEINSTALLING);
+								} else if (gameStatus == GAMEINSTALLED) {
+									btnDownload.setText(mContext.getResources().getText(R.string.game_play));
+
+								}
+
+	
+
+							}
+						});
+				
+				//set the status changed after the cancel button clicked
+				viewHolder.ib_Cancel.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View v) {
+						
+						viewHolder.btn_Download.setTag(GAMENOTINSTALLED);
+						viewHolder.btn_Download.setText(mContext.getResources().getText(R.string.game_download));
+						viewHolder.pb_Download.setProgress(0);
+						viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
+						viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
+						Thread.currentThread().interrupt();;
+						
+					}
+				});
+
 			}
 		}
 
@@ -189,6 +324,8 @@ public class LoaderAdapter extends BaseAdapter {
 		Button btn_Download;
 		ProgressBar pb_Download;
 		ImageButton ib_Cancel;
+		LinearLayout ll_GameInfoPanel;
+		LinearLayout ll_GameDownloadPanel;
 
 	}
 

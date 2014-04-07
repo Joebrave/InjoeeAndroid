@@ -16,6 +16,20 @@
     <string name="game_download_continue">Continue</string>
     <string name="game_download_installed">Install</string>
     <string name="action_bar_feedback">Feedback</string>
+    <string name="network_retry">Retry</string>
+
+    <!-- 初始化界面 -->
+    <string name="game_starting">Life is short, just Injoee!</string>
+
+    <!-- footer and loader -->
+    
+    <string name="xlistview_header_hint_normal">Pull to Refresh</string>
+    <string name="xlistview_header_hint_ready">Lose to Refresh</string>
+    <string name="xlistview_header_hint_loading">Loading...</string>
+    <string name="xlistview_header_last_time">Latest Updated Time:</string>
+    <string name="xlistview_footer_hint_normal">View More</string>
+    <string name="xlistview_footer_hint_ready">Lose to Load More</string>
+    <string name="xListView_footer_hint_no_more">No More Game</string>
 
     <!-- test String -->
 
@@ -24,5 +38,7 @@
     <string name="test_game_size">12M</string>
     <string name="title_activity_game_detail">GameDetail</string>
     <string name="test_reputation_num">200</string>
+    <string name="title_activity_start_page">StartPageActivity</string>
+    
 
 </resources>
