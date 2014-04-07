@@ -16,6 +16,18 @@ public class GameInfo {
 	public String gameObbPackagename;
 	public String gameObbDownloadURL;
 	
+	public DownloadStatus gameStatus = new DownloadStatus();
+	public static class DownloadStatus {
+		public final static int GAME_NOT_DOWNLOAD = 0;
+		public final static int GAME_DOWNLOADING = 1;
+		public final static int GAME_DOWNLOAD_PAUSED = 2;
+		public final static int GAME_DOWNLOADED = 3;
+		public final static int GAME_INSTALLED = 4;
+		
+		public long id = -1;
+		public int status = GAME_NOT_DOWNLOAD;
+		public int progress = -1;
+	}
 	
 	public String getGameCategory() {
 		return gameCategory;
