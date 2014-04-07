@@ -15,9 +15,11 @@ import org.json.JSONObject;
 import android.util.Log;
 
 import com.injoee.model.GameInfo;
+import com.injoee.util.Constant;
 
 public class GameListRequester {
 	public int total;
+	public Constant constant = new Constant();
 
 	public GameListRequester() {
 
@@ -27,6 +29,7 @@ public class GameListRequester {
 	IOException {
 		return this.doRequest(start, count, false);
 	}
+	
 	public List<GameInfo> doRequest(int start, int count, boolean test) throws JSONException,
 			IOException {
 
@@ -35,7 +38,7 @@ public class GameListRequester {
 			addTestGame(list);
 			return list;
 		}
-		String path = "http://www.injoee.com/games/list.php?";
+		String path = constant.serverHomeURL + "list.php?";
 		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
 
