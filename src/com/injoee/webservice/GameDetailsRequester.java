@@ -16,7 +16,7 @@ import com.injoee.util.Constant;
 
 public class GameDetailsRequester {
 	
-	Constant constant;  //server base url
+	Constant constant = new Constant();  //server base url
 	
 	public GameDetailsRequester() {
 

@@ -15,9 +15,11 @@ import org.json.JSONObject;
 import android.util.Log;
 
 import com.injoee.model.GameInfo;
+import com.injoee.util.Constant;
 
 public class GameListRequester {
 	public int total;
+	public Constant constant = new Constant();
 
 	public GameListRequester() {
 
@@ -28,7 +30,7 @@ public class GameListRequester {
 
 		List<GameInfo> list = new ArrayList<GameInfo>();
 
-		String path = "http://192.168.0.112//games/list.php?";
+		String path = constant.serverHomeURL + "games/list.php?";
 		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
 

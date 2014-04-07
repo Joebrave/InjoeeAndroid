@@ -20,7 +20,7 @@ public class Voter {
 	public int good;
 	}
 	
-	public Constant constant;
+	public Constant constant = new Constant();
 
 	public boolean badVoted(String gameId) throws Exception {
 
