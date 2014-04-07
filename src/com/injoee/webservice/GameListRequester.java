@@ -30,7 +30,7 @@ public class GameListRequester {
 
 		List<GameInfo> list = new ArrayList<GameInfo>();
 
-		String path = constant.serverHomeURL + "games/list.php?";
+		String path = constant.serverHomeURL + "list.php?";
 		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
 
