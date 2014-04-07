@@ -28,7 +28,7 @@ public class GameListRequester {
 
 		List<GameInfo> list = new ArrayList<GameInfo>();
 
-		String path = "http://www.injoee.com/games/list.php?";
+		String path = "http://192.168.0.112//games/list.php?";
 		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
 

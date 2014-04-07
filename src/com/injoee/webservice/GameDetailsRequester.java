@@ -12,8 +12,12 @@ import org.json.JSONObject;
 import android.util.Log;
 
 import com.injoee.model.GameInfoDetail;
+import com.injoee.util.Constant;
 
 public class GameDetailsRequester {
+	
+	Constant constant;  //server base url
+	
 	public GameDetailsRequester() {
 
 	}
@@ -24,7 +28,7 @@ public class GameDetailsRequester {
 
 		GameInfoDetail gameDetailItem = new GameInfoDetail();
 
-		String path = "http://www.injoee.com/games/detail.php?";
+		String path = constant.serverHomeURL + "detail.php?";
 
 		String param = "id=" + gameId;
 

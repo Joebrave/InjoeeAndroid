@@ -4,8 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
 import org.json.JSONObject;
 
+
+
+import com.injoee.util.Constant;
 
 import android.util.Log;
 
@@ -15,10 +19,12 @@ public class Voter {
 	public int bad;
 	public int good;
 	}
+	
+	public Constant constant;
 
 	public boolean badVoted(String gameId) throws Exception {
 
-		String path = "http://www.injoee.com/games/votes.php?id=";
+		String path = constant.serverHomeURL + "votes.php?id=";
 
 		path = path+ gameId + "&type=bad";
 
