@@ -24,12 +24,20 @@ public class GameListRequester {
 	public GameListRequester() {
 
 	}
-
+	
 	public List<GameInfo> doRequest(int start, int count) throws JSONException,
+	IOException {
+		return this.doRequest(start, count, false);
+	}
+	
+	public List<GameInfo> doRequest(int start, int count, boolean test) throws JSONException,
 			IOException {
 
 		List<GameInfo> list = new ArrayList<GameInfo>();
-
+		if(test) {
+			addTestGame(list);
+			return list;
+		}
 		String path = constant.serverHomeURL + "list.php?";
 		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
@@ -96,7 +104,7 @@ public class GameListRequester {
 						.getString("game_package_size"));
 				gameInfoItem.setGameDownLoadURL(jsonObjectGameDetail
 						.getString("game_download_url"));
-				gameInfoItem.setGameObbDownloadURL(jsonObjectGameDetail
+				gameInfoItem.setGameObbPackagename(jsonObjectGameDetail
 						.getString("game_obb_pacakge_name"));
 				gameInfoItem.setGameObbDownloadURL(jsonObjectGameDetail
 						.getString("game_obb_download_url"));
@@ -107,7 +115,31 @@ public class GameListRequester {
 			}
 
 		}
+		Log.e("Joe", "return list");
 		return list;
 
+	}
+
+	private void addTestGame(List<GameInfo> list) {
+
+		GameInfo gameInfoItem = new GameInfo();
+		gameInfoItem.setGameId("1212313");
+
+		Log.e("gameid", gameInfoItem.getGameId());
+
+		gameInfoItem.setGameName("Test Game");
+
+		Log.e("gamename", gameInfoItem.getGameName());
+
+		gameInfoItem.setGameIcon("");
+		gameInfoItem.setGameCategory("Test Category");
+		gameInfoItem.setGamePackageName("com.injoee.test");
+		gameInfoItem.setGamePackageSize("13.2M");
+		gameInfoItem.setGameDownLoadURL("http://down.mumayi.com/41052/mbaidu");
+		gameInfoItem.setGameObbDownloadURL("");
+		gameInfoItem.setGameObbDownloadURL("");
+		gameInfoItem.setGameType("Test");
+
+		list.add(gameInfoItem);
 	}
 }

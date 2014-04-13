@@ -2,19 +2,18 @@ package com.injoee.ui;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
+import android.database.ContentObserver;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.format.DateFormat;
+import android.os.Handler;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
@@ -24,7 +23,6 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -40,7 +38,6 @@ public class MainActivity extends Activity implements LazyListViewListener {
 
 	protected LinearLayout llNetworkProblem;
 	protected Button btnReconnectNetwork;
-	private LoaderAdapter mAdapter;
 	private ActionBar mActionBar;
 	private int mTotal; // count the total number of the featured game
 	private int mCurrentLoadedGamesNum; // to count the current games number in
@@ -57,6 +54,27 @@ public class MainActivity extends Activity implements LazyListViewListener {
 	private Time mTime = new Time();
 
 	private List<GameInfo> gameList = new ArrayList<GameInfo>();
+	
+	private LoaderAdapter mAdapter;
+	private MyContentObserver mContentObserver;
+	/**
+	 * Called when there's a change to the downloads database.
+	 */
+	void handleDownloadsChanged() {
+		Log.e("Joe", "+++++++downloads changed");
+		this.mAdapter.notifyDataSetChanged();
+	}
+	
+	private class MyContentObserver extends ContentObserver {
+		public MyContentObserver() {
+			super(new Handler());
+		}
+
+		@Override
+		public void onChange(boolean selfChange) {
+			handleDownloadsChanged();
+		}
+	}
 
 	@SuppressLint("NewApi")
 	@Override
@@ -74,6 +92,9 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		game_ListView.setPullLoadEnable(true);
 		game_ListView.setLazyListViewListener(this);
 		mAdapter = new LoaderAdapter(MainActivity.this);
+
+		mContentObserver = new MyContentObserver();
+		
 		llNetworkProblem = (LinearLayout) findViewById(R.id.ll_network_problem_panel);
 		btnReconnectNetwork = (Button) findViewById(R.id.btn_reconnect_internet);
 
@@ -240,9 +261,7 @@ public class MainActivity extends Activity implements LazyListViewListener {
 
 		@Override
 		public void onClick(View v) {
-
-			new FetchGamesTask().execute();
-
+			new FetchGamesTask().execute(REFRESH);
 		}
 	};
 
@@ -271,5 +290,17 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		game_ListView.stopRefresh();
 		game_ListView.stopLoadMore();
 		game_ListView.setRefreshTime(time);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		this.mAdapter.registerObserver(mContentObserver);
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		this.mAdapter.unregisterObserver(mContentObserver);
 	}
 }

@@ -3,17 +3,12 @@ package com.injoee.ui;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.injoee.R;
-import com.injoee.imageloader.ImageLoader;
-import com.injoee.model.GameInfo;
-
-import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.content.res.Resources;
-import android.os.Handler;
-import android.os.Message;
+import android.content.Intent;
+import android.database.ContentObserver;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,25 +22,85 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.injoee.R;
+import com.injoee.imageloader.ImageLoader;
+import com.injoee.model.GameInfo;
+import com.injoee.model.GameInfo.DownloadStatus;
+import com.injoee.providers.DownloadManager;
+import com.injoee.providers.DownloadManager.Request;
+import com.injoee.providers.downloads.DownloadService;
+
 public class LoaderAdapter extends BaseAdapter {
 
 	private Context mContext;
 	private List<GameInfo> mFeaturedGames;
 	private List<GameInfo> mLocalGames;
 	private ImageLoader mImageLoader;
-	private final int GAMENOTINSTALLED = 0;
-	private final int GAMEINSTALLING = 1;
-	private final int GAMEPAUSE = 2;
-	private final int GAMEINSTALLED = 3;
-	private final int STOP = 0x10000;
-	private final int GO = 0x10001;
-	private final String downLoadTag = "downloadedtimes";
+
+	final private int mTitleColumnId;
+	final private int mStatusColumnId;
+	final private int mReasonColumnId;
+	final private int mTotalBytesColumnId;
+	final private int mCurrentBytesColumnId;
+	final private int mMediaTypeColumnId;
+	final private int mDateColumnId;
+	final private int mIdColumnId;
+	final private int mLocalUriColumnId;
+
+	DownloadManager mDownloadManager;
+	Cursor mDownloadsCursor;
+
+	private boolean isPausedForWifi(Cursor cursor) {
+		return cursor.getInt(mReasonColumnId) == DownloadManager.PAUSED_QUEUED_FOR_WIFI;
+	}
+
+	/**
+	 * Move {@link #mDateSortedCursor} to the download with the given ID.
+	 * 
+	 * @return true if the specified download ID was found; false otherwise
+	 */
+	private boolean moveToDownload(long downloadId) {
+		for (mDownloadsCursor.moveToFirst(); !mDownloadsCursor.isAfterLast(); mDownloadsCursor
+				.moveToNext()) {
+			if (mDownloadsCursor.getLong(mIdColumnId) == downloadId) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	public LoaderAdapter(Context context) {
 		this.mContext = context;
 		this.mFeaturedGames = new ArrayList<GameInfo>();
 		this.mLocalGames = new ArrayList<GameInfo>();
 		this.mImageLoader = new ImageLoader(context);
+		this.mDownloadManager = new DownloadManager(
+				context.getContentResolver(), context.getPackageName());
+		startDownloadService(context);
+
+		this.mDownloadManager.setAccessAllDownloads(true);
+		DownloadManager.Query baseQuery = new DownloadManager.Query()
+											.setOnlyIncludeVisibleInDownloadsUi(true);
+		this.mDownloadsCursor = mDownloadManager.query(baseQuery);
+		
+		Cursor cursor = this.mDownloadsCursor;
+		mIdColumnId = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_ID);
+		mTitleColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE);
+		mStatusColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS);
+		mReasonColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON);
+		mTotalBytesColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+		mCurrentBytesColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+		mMediaTypeColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE);
+		mDateColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP);
+		mLocalUriColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI);
 	}
 
 	public void setFeaturedGames(List<GameInfo> games) {
@@ -168,9 +223,6 @@ public class LoaderAdapter extends BaseAdapter {
 						.findViewById(R.id.ll_game_info);
 				viewHolder.ll_GameDownloadPanel = (LinearLayout) convertView
 						.findViewById(R.id.ll_game_download_panel);
-
-				viewHolder.pb_Download = (ProgressBar) convertView
-						.findViewById(R.id.pb_featured_game_download);
 				viewHolder.ib_Cancel = (ImageButton) convertView
 						.findViewById(R.id.ib_download_cancel);
 
@@ -189,164 +241,163 @@ public class LoaderAdapter extends BaseAdapter {
 
 		} else {
 			final ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-			GameInfo gameInfo = mFeaturedGames.get(position - (localSize + 2));
+			final GameInfo gameInfo = mFeaturedGames.get(position - (localSize + 2));
 
 			// handler
-
-			
-
 			if (gameInfo != null) {
 				viewHolder.tv_FeaturedGameName.setText(gameInfo.getGameName());
 				viewHolder.tv_FeaturedGameType.setText(gameInfo.getGameType());
-				viewHolder.tv_FeaturedGameSize.setText(gameInfo
-						.getGamePackageSize());
-				viewHolder.btn_Download.setTag(GAMENOTINSTALLED);
-
-				viewHolder.tv_FeaturedGameID.setText(gameInfo.getGameId());
-				mImageLoader.displayImage(gameInfo.getGameIcon(),
-						viewHolder.iv_FeaturedGameIcon, false);
+				viewHolder.tv_FeaturedGameSize.setText(gameInfo.getGamePackageSize());
 				
+				int status = DownloadManager.STATUS_FAILED;
+				Log.e("Joe", "getView_id: " + gameInfo.gameStatus.id);
+				DownloadManager.Query query = new DownloadManager.Query();
 				
-				 final Handler mHandler = new Handler() {
-					public void handleMessage(Message msg) {
+				if(gameInfo.gameStatus.id <= 0) {
+					query = query.setFilterByItemId(gameInfo.gameId);
+				} else {
+					query = query.setFilterById(gameInfo.gameStatus.id);
+				}
+				Cursor cursor = mDownloadManager.query(query);
+				if(cursor != null) {
+					if(cursor.getCount() != 0) {
+						cursor.moveToFirst();
+						gameInfo.gameStatus.id = cursor.getLong(this.mIdColumnId);
+						long totalBytes = cursor.getLong(this.mTotalBytesColumnId);
+						long currentBytes = cursor.getLong(this.mCurrentBytesColumnId);
 						
-						if(msg.what<100&&!Thread.currentThread().isInterrupted())
-						{
-							viewHolder.pb_Download.setProgress(msg.what);
-							viewHolder.pb_Download.setVisibility(View.VISIBLE);
+						Log.e("Joe", "toalBytesColId: " + this.mTotalBytesColumnId + ", bytes: " + totalBytes);
+						Log.e("Joe", "curBytesColId: " + this.mCurrentBytesColumnId + ", bytes: " + currentBytes);
+						
+						int progress = getProgressValue(totalBytes, currentBytes);
+	
+						boolean indeterminate = (status == DownloadManager.STATUS_PENDING);
+						Log.e("Joe", "progress: " + progress + ", indeterminate: "+ indeterminate);
+						viewHolder.pb_Download.setIndeterminate(indeterminate);
+						if (!indeterminate) {
+							viewHolder.pb_Download.setProgress(progress);
 						}
-						else if(msg.what==100)
-						{
+						
+						status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+					}
+					cursor.close();
+				}
+				
+				Button btn = viewHolder.btn_Download;
+				switch(status) {
+				case DownloadManager.STATUS_FAILED:
+					btn.setText(mContext.getResources().getText(R.string.game_download));
+					viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
+					viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
+					gameInfo.gameStatus.status = DownloadStatus.GAME_NOT_DOWNLOAD;
+					break;
+					
+				case DownloadManager.STATUS_PAUSED:
+					btn.setText(mContext.getResources().getText(R.string.game_download_continue));
+					viewHolder.ll_GameDownloadPanel.setVisibility(View.VISIBLE);
+					viewHolder.ll_GameInfoPanel.setVisibility(View.INVISIBLE);
+					viewHolder.ib_Cancel.setOnClickListener(new OnClickListener(){
+
+						@Override
+						public void onClick(View v) {
+							gameInfo.gameStatus.status = DownloadStatus.GAME_NOT_DOWNLOAD;
+							deleteDownload(gameInfo.gameStatus.id);
 							viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
 							viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
-							viewHolder.btn_Download.setText(mContext.getResources().getString(R.string.game_play));
-							viewHolder.btn_Download.setTag(GAMEINSTALLED);
-							Thread.currentThread().interrupt();
-							setDownloadedNum();// set the downloaded number ++ 1
-						}
-							
-							
-					}
-				};
-
-				viewHolder.btn_Download
-						.setOnClickListener(new OnClickListener() {
-
-							@Override
-							public void onClick(View v) {
-
-								// progressbar counter
-								Thread progressbarThread = new Thread(
-										new Runnable() {
-
-											@Override
-											public void run() {
-
-												int progressbarPrecentage = 0;
-
-												for (int i = 0; i < 20; i++) {
-													try {
-														progressbarPrecentage = (i + 1) * 5;
-														Thread.sleep(1000);
-
-														Message msg = new Message();
-														msg.what = progressbarPrecentage;
-														mHandler.sendMessage(msg);
-													
-
-													} catch (Exception e) {
-														e.printStackTrace();
-													}
-												}
-
-											}
-										});
-
-								Button btnDownload = (Button) v;
-
-								int gameStatus = (Integer) btnDownload.getTag();
-
-								if (gameStatus == GAMENOTINSTALLED) {
-									
-									if(getDownloadedNum())
-									{
-										final Dialog advDialog = new Dialog(mContext);
-										advDialog.setContentView(R.layout.ad_dialog);
-										advDialog.setTitle(mContext.getResources().getText(R.string.ad_favrite_title));
-										
-										LinearLayout llDonate = (LinearLayout) advDialog.findViewById(R.id.ll_ad_favor_donate);
-										LinearLayout llReject = (LinearLayout) advDialog.findViewById(R.id.ll_ad_favor_reject);
-										
-										llDonate.setOnClickListener(new OnClickListener() {
-											
-											@Override
-											public void onClick(View v) {
-												// TODO Auto-generated method stub
-												
-												advDialog.dismiss();
-											}
-										});
-										
-										llDonate.setOnClickListener(new OnClickListener() {
-											
-											@Override
-											public void onClick(View v) {
-												// TODO Auto-generated method stub
-												
-												
-											}
-										});
-										
-									}
-										
-									btnDownload.setText(mContext.getResources().getText(R.string.game_download_pause));
-									btnDownload.setTag(GAMEINSTALLING);
-
-									viewHolder.ll_GameDownloadPanel.setVisibility(View.VISIBLE);
-									viewHolder.ll_GameInfoPanel.setVisibility(View.INVISIBLE);
-
-									viewHolder.pb_Download.setMax(100);
-									viewHolder.pb_Download.setProgress(0);
-									
-									
-									progressbarThread.start();
-
-								} else if (gameStatus == GAMEINSTALLING) {
-									btnDownload.setText(mContext.getResources().getText(R.string.game_download_pause));
-									btnDownload.setTag(GAMEPAUSE);
-								} else if (gameStatus == GAMEPAUSE) {
-									btnDownload.setText(mContext.getResources().getText(R.string.game_download_continue));
-									btnDownload.setTag(GAMEINSTALLING);
-								} else if (gameStatus == GAMEINSTALLED) {
-									btnDownload.setText(mContext.getResources().getText(R.string.game_play));
-
-								}
-
-	
-
-							}
-						});
-				
-				//set the status changed after the cancel button clicked
-				viewHolder.ib_Cancel.setOnClickListener(new OnClickListener() {
+						}});
+					gameInfo.gameStatus.status = DownloadStatus.GAME_DOWNLOAD_PAUSED;
+					break;
 					
+				case DownloadManager.STATUS_PENDING:
+				case DownloadManager.STATUS_RUNNING:
+					btn.setText(mContext.getResources().getText(R.string.game_download_pause));
+					viewHolder.ll_GameDownloadPanel.setVisibility(View.VISIBLE);
+					viewHolder.ll_GameInfoPanel.setVisibility(View.INVISIBLE);
+					gameInfo.gameStatus.status = DownloadStatus.GAME_DOWNLOADING;
+					viewHolder.ib_Cancel.setOnClickListener(new OnClickListener(){
+
+						@Override
+						public void onClick(View v) {
+							gameInfo.gameStatus.status = DownloadStatus.GAME_NOT_DOWNLOAD;
+							deleteDownload(gameInfo.gameStatus.id);
+							viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
+							viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
+							refresh();
+						}});
+					break;
+					
+				case DownloadManager.STATUS_SUCCESSFUL:
+					btn.setText(mContext.getResources().getText(R.string.game_play));
+					viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
+					viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
+					gameInfo.gameStatus.status = DownloadStatus.GAME_DOWNLOADED;
+					break;					
+				}
+				
+				btn.setOnClickListener(new OnClickListener() {
+
 					@Override
 					public void onClick(View v) {
-						
-						viewHolder.btn_Download.setTag(GAMENOTINSTALLED);
-						viewHolder.btn_Download.setText(mContext.getResources().getText(R.string.game_download));
-						viewHolder.pb_Download.setProgress(0);
-						viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
-						viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
-						Thread.currentThread().interrupt();;
-						
+						performClicked((Button)v, gameInfo);
 					}
+					
 				});
+
 
 			}
 		}
 
 		return convertView;
+	}
+	
+	private void deleteDownload(long downloadId) {
+		if (moveToDownload(downloadId)) {
+			int status = mDownloadsCursor.getInt(mStatusColumnId);
+			boolean isComplete = status == DownloadManager.STATUS_SUCCESSFUL
+					|| status == DownloadManager.STATUS_FAILED;
+			String localUri = mDownloadsCursor.getString(mLocalUriColumnId);
+			if (isComplete && localUri != null) {
+				String path = Uri.parse(localUri).getPath();
+				if (path.startsWith(Environment.getExternalStorageDirectory()
+						.getPath())) {
+					mDownloadManager.markRowDeleted(downloadId);
+					return;
+				}
+			}
+		}
+		mDownloadManager.remove(downloadId);
+	}
+	
+	public int getProgressValue(long totalBytes, long currentBytes) {
+		if (totalBytes == -1) {
+			return 0;
+		}
+		return (int) (currentBytes * 100 / totalBytes);
+	}
+	
+	protected void performClicked(Button btn, GameInfo gameInfo) {
+		switch(gameInfo.gameStatus.status) {
+		case DownloadStatus.GAME_NOT_DOWNLOAD:
+			Log.e("Joe", "performClicked_id: " + gameInfo.gameStatus.id);
+			gameInfo.gameStatus.id = startDownload(gameInfo.gameDownLoadURL, gameInfo.gameId);
+			gameInfo.gameStatus.progress = 0;
+			refresh();
+			break;
+			
+		case DownloadStatus.GAME_DOWNLOADING:
+			mDownloadManager.pauseDownload(gameInfo.gameStatus.id);
+			break;
+		case DownloadStatus.GAME_DOWNLOAD_PAUSED:
+			mDownloadManager.resumeDownload(gameInfo.gameStatus.id);
+			break;
+		case DownloadStatus.GAME_DOWNLOADED:
+			btn.setText(R.string.game_play);
+			break;
+		case DownloadStatus.GAME_INSTALLED:
+			btn.setText(R.string.game_play);
+			break;
+		}
+
 	}
 
 	static class ViewHolder {
@@ -372,31 +423,41 @@ public class LoaderAdapter extends BaseAdapter {
 		Button btnDeleteGame;
 		Button btnPlayGame;
 	}
-	
-	private boolean getDownloadedNum()
-	{
-		SharedPreferences spDownloadedTimes = mContext.getSharedPreferences(downLoadTag, mContext.MODE_PRIVATE);
-		
-		int downloadedTimes = spDownloadedTimes.getInt("downloaded_times", 0);
-		
-		if(downloadedTimes/3 ==0)
-			return true;
-		else
-			return false;
+
+	private long startDownload(String url, String itemId) {
+		Uri srcUri = Uri.parse(url);
+		DownloadManager.Request request = new Request(srcUri);
+		request.setItemId(itemId);
+		request.setDestinationInExternalPublicDir(
+				Environment.DIRECTORY_DOWNLOADS, "/");
+		request.setDescription("Just for test");
+		request.setShowRunningNotification(false);
+		long ret = mDownloadManager.enqueue(request);
+		return ret;
+	}
+
+	private void startDownloadService(Context context) {
+		Intent intent = new Intent();
+		intent.setClass(context, DownloadService.class);
+		context.startService(intent);
+	}
+
+	private ContentObserver mObserver;
+	public void unregisterObserver(ContentObserver observer) {
+		this.mDownloadsCursor.unregisterContentObserver(observer);
 	}
 	
-	private void setDownloadedNum()
-	{
-		SharedPreferences spDownloadedTimes = mContext.getSharedPreferences(downLoadTag, mContext.MODE_PRIVATE);
+	public void registerObserver(ContentObserver observer) {
+		mObserver = observer;
+		this.mDownloadsCursor.registerContentObserver(observer);
+	}
+	
+	public void refresh() {
+		unregisterObserver(mObserver);
 		
-		int downloadedTimes = spDownloadedTimes.getInt("downloaded_times", 0);
+		this.mDownloadsCursor.close();
+		this.mDownloadsCursor = mDownloadManager.query(new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true));
 		
-		downloadedTimes ++;
-		
-		Editor editor = spDownloadedTimes.edit();
-		
-		editor.putInt("downloaded_times", downloadedTimes);
-		
-		editor.commit();
+		registerObserver(mObserver);
 	}
 }
