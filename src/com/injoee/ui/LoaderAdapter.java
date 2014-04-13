@@ -7,7 +7,10 @@ import com.injoee.R;
 import com.injoee.imageloader.ImageLoader;
 import com.injoee.model.GameInfo;
 
+import android.app.Dialog;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Message;
@@ -36,6 +39,7 @@ public class LoaderAdapter extends BaseAdapter {
 	private final int GAMEINSTALLED = 3;
 	private final int STOP = 0x10000;
 	private final int GO = 0x10001;
+	private final String downLoadTag = "downloadedtimes";
 
 	public LoaderAdapter(Context context) {
 		this.mContext = context;
@@ -218,6 +222,7 @@ public class LoaderAdapter extends BaseAdapter {
 							viewHolder.btn_Download.setText(mContext.getResources().getString(R.string.game_play));
 							viewHolder.btn_Download.setTag(GAMEINSTALLED);
 							Thread.currentThread().interrupt();
+							setDownloadedNum();// set the downloaded number ++ 1
 						}
 							
 							
@@ -262,8 +267,38 @@ public class LoaderAdapter extends BaseAdapter {
 								int gameStatus = (Integer) btnDownload.getTag();
 
 								if (gameStatus == GAMENOTINSTALLED) {
-									Log.e("download button touched",
-											"download button is touched");
+									
+									if(getDownloadedNum())
+									{
+										final Dialog advDialog = new Dialog(mContext);
+										advDialog.setContentView(R.layout.ad_dialog);
+										advDialog.setTitle(mContext.getResources().getText(R.string.ad_favrite_title));
+										
+										LinearLayout llDonate = (LinearLayout) advDialog.findViewById(R.id.ll_ad_favor_donate);
+										LinearLayout llReject = (LinearLayout) advDialog.findViewById(R.id.ll_ad_favor_reject);
+										
+										llDonate.setOnClickListener(new OnClickListener() {
+											
+											@Override
+											public void onClick(View v) {
+												// TODO Auto-generated method stub
+												
+												advDialog.dismiss();
+											}
+										});
+										
+										llDonate.setOnClickListener(new OnClickListener() {
+											
+											@Override
+											public void onClick(View v) {
+												// TODO Auto-generated method stub
+												
+												
+											}
+										});
+										
+									}
+										
 									btnDownload.setText(mContext.getResources().getText(R.string.game_download_pause));
 									btnDownload.setTag(GAMEINSTALLING);
 
@@ -336,5 +371,32 @@ public class LoaderAdapter extends BaseAdapter {
 		TextView tvMyGameSize;
 		Button btnDeleteGame;
 		Button btnPlayGame;
+	}
+	
+	private boolean getDownloadedNum()
+	{
+		SharedPreferences spDownloadedTimes = mContext.getSharedPreferences(downLoadTag, mContext.MODE_PRIVATE);
+		
+		int downloadedTimes = spDownloadedTimes.getInt("downloaded_times", 0);
+		
+		if(downloadedTimes/3 ==0)
+			return true;
+		else
+			return false;
+	}
+	
+	private void setDownloadedNum()
+	{
+		SharedPreferences spDownloadedTimes = mContext.getSharedPreferences(downLoadTag, mContext.MODE_PRIVATE);
+		
+		int downloadedTimes = spDownloadedTimes.getInt("downloaded_times", 0);
+		
+		downloadedTimes ++;
+		
+		Editor editor = spDownloadedTimes.edit();
+		
+		editor.putInt("downloaded_times", downloadedTimes);
+		
+		editor.commit();
 	}
 }

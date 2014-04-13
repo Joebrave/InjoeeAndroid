@@ -40,5 +40,10 @@
     <string name="test_reputation_num">200</string>
     <string name="title_activity_start_page">StartPageActivity</string>
     
-
+        <!-- ad alertdailog content -->
+    
+    <string name="ad_favrite_message">We need your donation for operation cost! Begging you to download an app then launch it! This dialog will show every 3 games downloaded. Thanks a million!</string>
+    <string name="ad_favrite_donate">Donate</string>
+    <string name="ad_favrite_reject">Reject</string>
+    <string name="ad_favrite_title">Donation Needed!</string>
 </resources>
