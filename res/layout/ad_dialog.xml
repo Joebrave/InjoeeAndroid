@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:orientation="horizontal" >
+
+        <ImageView
+            android:id="@+id/iv_ad_favrite_image"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bowl"
+            android:contentDescription="@drawable/bowl" />
+
+        <TextView
+            android:id="@+id/tv_ad_favrite_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="10dp"
+            android:text="@string/ad_favrite_message"
+            android:textColor="@color/black"
+            android:textSize="17sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="0.06dp"
+        android:layout_marginTop="2dp"
+        android:background="@color/gray" >
+    </View>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="35dp"
+        android:orientation="horizontal" >
+
+        <!-- 两个按钮 -->
+
+        <LinearLayout
+            android:id="@+id/ll_ad_favor_reject"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:background="@drawable/button_reputation_num"
+            android:baselineAligned="false"
+            android:clickable="true"
+            android:orientation="horizontal" >
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginLeft="38dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/ad_favor_reject" />
+
+            <TextView
+                android:id="@+id/tv_ad_favor_reject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/ad_favrite_reject"
+                android:textColor="@color/reputation_num"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="1px"
+            android:layout_height="fill_parent"
+            android:background="@color/gray" >
+        </View>
+
+        <LinearLayout
+            android:id="@+id/ll_ad_favor_donate"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:background="@drawable/button_reputation_num"
+            android:baselineAligned="false"
+            android:clickable="true"
+            android:orientation="horizontal" >
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginLeft="38dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/ad_favor_donate" />
+
+            <TextView
+                android:id="@+id/tv_ad_favor_donate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/ad_favrite_donate"
+                android:textColor="@color/reputation_num"
+                android:textSize="18sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="1px"
+        android:layout_marginBottom="5dp"
+        android:background="@color/gray" >
+    </View>
+
+</LinearLayout>
