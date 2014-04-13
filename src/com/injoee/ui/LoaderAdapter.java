@@ -23,6 +23,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.injoee.R;
+import com.injoee.func.GameInstaller;
 import com.injoee.imageloader.ImageLoader;
 import com.injoee.model.GameInfo;
 import com.injoee.model.GameInfo.DownloadStatus;
@@ -278,7 +279,10 @@ public class LoaderAdapter extends BaseAdapter {
 							viewHolder.pb_Download.setProgress(progress);
 						}
 						
-						status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+						status = cursor.getInt(this.mStatusColumnId);
+						String localUri = cursor.getString(this.mLocalUriColumnId);
+						gameInfo.gameStatus.filePath = localUri;
+						Log.e("Joe", "filePath: " + localUri);
 					}
 					cursor.close();
 				}
@@ -380,7 +384,6 @@ public class LoaderAdapter extends BaseAdapter {
 		case DownloadStatus.GAME_NOT_DOWNLOAD:
 			Log.e("Joe", "performClicked_id: " + gameInfo.gameStatus.id);
 			gameInfo.gameStatus.id = startDownload(gameInfo.gameDownLoadURL, gameInfo.gameId);
-			gameInfo.gameStatus.progress = 0;
 			refresh();
 			break;
 			
@@ -392,6 +395,14 @@ public class LoaderAdapter extends BaseAdapter {
 			break;
 		case DownloadStatus.GAME_DOWNLOADED:
 			btn.setText(R.string.game_play);
+
+			if(!GameInstaller.isApkInstalled(mContext, gameInfo.gamePackageName)) {
+				if(gameInfo.gameCategory.equals("APK")) {
+					GameInstaller.installApk(mContext, gameInfo.gameStatus.filePath);
+				} else if(gameInfo.gameCategory.equals("DPK")) {
+					GameInstaller.installDpk(mContext, gameInfo.gameStatus.filePath);
+				}
+			}
 			break;
 		case DownloadStatus.GAME_INSTALLED:
 			btn.setText(R.string.game_play);

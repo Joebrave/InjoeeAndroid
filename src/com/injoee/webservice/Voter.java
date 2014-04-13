@@ -24,7 +24,7 @@ public class Voter {
 
 	public boolean badVoted(String gameId) throws Exception {
 
-		String path = constant.serverHomeURL + "votes.php?id=";
+		String path = constant.SERVER_URL_PREFIX + "votes.php?id=";
 
 		path = path+ gameId + "&type=bad";
 
