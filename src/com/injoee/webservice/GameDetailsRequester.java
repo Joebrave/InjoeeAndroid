@@ -28,7 +28,7 @@ public class GameDetailsRequester {
 
 		GameInfoDetail gameDetailItem = new GameInfoDetail();
 
-		String path = constant.serverHomeURL + "detail.php?";
+		String path = constant.SERVER_URL_PREFIX + "detail.php?";
 
 		String param = "id=" + gameId;
 

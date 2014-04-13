@@ -38,7 +38,7 @@ public class GameListRequester {
 			addTestGame(list);
 			return list;
 		}
-		String path = constant.serverHomeURL + "list.php?";
+		String path = constant.SERVER_URL_PREFIX + "list.php?";
 		String param = "start=" + start + "&count=" + count; // 
 		path = path + param;
 
@@ -127,19 +127,39 @@ public class GameListRequester {
 
 		Log.e("gameid", gameInfoItem.getGameId());
 
-		gameInfoItem.setGameName("Test Game");
+		gameInfoItem.setGameName("Flappy Bird");
 
 		Log.e("gamename", gameInfoItem.getGameName());
 
 		gameInfoItem.setGameIcon("");
-		gameInfoItem.setGameCategory("Test Category");
-		gameInfoItem.setGamePackageName("com.injoee.test");
-		gameInfoItem.setGamePackageSize("13.2M");
-		gameInfoItem.setGameDownLoadURL("http://down.mumayi.com/41052/mbaidu");
+		gameInfoItem.setGameCategory("APK");
+		gameInfoItem.setGamePackageName("com.dotgears.flappybird");
+		gameInfoItem.setGamePackageSize("0.80M");
+		gameInfoItem.setGameDownLoadURL(Constant.SERVER_URL_PREFIX + "flappybird.apk");
 		gameInfoItem.setGameObbDownloadURL("");
 		gameInfoItem.setGameObbDownloadURL("");
 		gameInfoItem.setGameType("Test");
 
 		list.add(gameInfoItem);
+
+		GameInfo gameInfoItem2 = new GameInfo();
+		gameInfoItem2.setGameId("12123132");
+
+		Log.e("gameid", gameInfoItem2.getGameId());
+
+		gameInfoItem2.setGameName("Muffin Knight");
+
+		Log.e("gamename", gameInfoItem2.getGameName());
+
+		gameInfoItem2.setGameIcon("");
+		gameInfoItem2.setGameCategory("DPK");
+		gameInfoItem2.setGamePackageName("com.angrymobgames.muffinknightfree");
+		gameInfoItem2.setGamePackageSize("69.8M");
+		gameInfoItem2.setGameDownLoadURL(Constant.SERVER_URL_PREFIX + "muffinknight.zip");
+		gameInfoItem2.setGameObbDownloadURL("");
+		gameInfoItem2.setGameObbDownloadURL("");
+		gameInfoItem2.setGameType("Test2");
+
+		list.add(gameInfoItem2);
 	}
 }

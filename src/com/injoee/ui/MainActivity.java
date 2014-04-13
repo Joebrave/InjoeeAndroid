@@ -134,7 +134,7 @@ public class MainActivity extends Activity implements LazyListViewListener {
 			if (params[0] == LOAD || params[0] == REFRESH) {
 
 				try {
-					gameList = gameDB.doRequest(0, EACH_TIME_NUM);
+					gameList = gameDB.doRequest(0, EACH_TIME_NUM, true);
 
 					Log.e("return size is!", String.valueOf(gameList.size()));
 

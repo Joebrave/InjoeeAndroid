@@ -26,7 +26,7 @@ public class GameInfo {
 		
 		public long id = -1;
 		public int status = GAME_NOT_DOWNLOAD;
-		public int progress = -1;
+		public String filePath;
 	}
 	
 	public String getGameCategory() {
