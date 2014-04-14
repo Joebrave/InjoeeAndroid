@@ -3,16 +3,20 @@ package com.injoee.func;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.injoee.R;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
@@ -37,46 +41,118 @@ public class GameInstaller {
 		context.startActivity(intent);
 	}
 	
-	public static boolean installDpk(Context context, String dpkFile) {
-		String srcFile = null;
-		if(dpkFile.startsWith("file://")) {
-			srcFile = dpkFile.substring(7, dpkFile.length());
-		} else {
-			srcFile = dpkFile;
+	private static class InstallDpkTask extends AsyncTask<String, Integer, String> {
+		private final Context mContext;
+		private final ProgressDialog mProgressDialog;
+		public InstallDpkTask(Context context) {
+			mContext = context;
+			mProgressDialog = new ProgressDialog(context);
 		}
 		
-		//decompress dpk
-		String unzipDpkDir = unzipFile(context, srcFile);
-		
-		//copy to right place
-		try {
-			copyFolder(new File(unzipDpkDir, OBB_DIR), new File(Environment.getExternalStorageDirectory(), OBB_DIR));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			mProgressDialog.setIndeterminate(true);
+			mProgressDialog.setCanceledOnTouchOutside(false);
+			mProgressDialog.setCancelable(true);
+			mProgressDialog.setMessage(mContext.getText(R.string.extracting));
+			mProgressDialog.show();
 		}
-		
-		File[] files = new File(unzipDpkDir).listFiles();
-		String apkFile = null;
-		for(File f : files) {
-			if(f.isFile()) {
-				if(f.getAbsolutePath().endsWith(".apk")) {
-					apkFile = f.getAbsolutePath();
-					break;
+
+		@Override
+		protected void onPostExecute(String result) {
+			super.onPostExecute(result);
+			
+			String apkFile = null;
+			
+			if(result != null) {
+				File[] files = new File(result).listFiles();
+				for(File f : files) {
+					if(f.isFile()) {
+						if(f.getAbsolutePath().endsWith(".apk")) {
+							apkFile = f.getAbsolutePath();
+							break;
+						}
+					}
 				}
 			}
+			
+			mProgressDialog.dismiss();
+			
+			if(apkFile != null) {
+				installApk(mContext, apkFile);
+			} else {
+				Toast.makeText(mContext, "no apk found!", Toast.LENGTH_SHORT).show();
+			}
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... values) {
+			super.onProgressUpdate(values);
+			boolean copyStart = (values[0] == 50);
+			if(copyStart) {
+				mProgressDialog.setMessage("Loading...");
+			}
+		}
+
+		@Override
+		protected void onCancelled() {
+			// TODO Auto-generated method stub
+			super.onCancelled();
+		}
+
+		@Override
+		protected String doInBackground(String... params) {
+			String dpkFile = params[0];
+			String srcFile = null;
+			if(dpkFile.startsWith("file://")) {
+				srcFile = dpkFile.substring(7, dpkFile.length());
+			} else {
+				srcFile = dpkFile;
+			}
+			
+			//decompress dpk
+			String unzipDpkDir = unzipFile(mContext, srcFile);
+			
+			this.publishProgress(50);
+			
+			//copy to right place
+			try {
+				copyFolder(new File(unzipDpkDir, OBB_DIR), new File(Environment.getExternalStorageDirectory(), OBB_DIR));
+			} catch (IOException e) {
+				return null;
+			}
+			return unzipDpkDir;
 		}
 		
-		if(apkFile != null) {
-			installApk(context, apkFile);
-		} else {
-			Toast.makeText(context, "no apk found!", Toast.LENGTH_SHORT).show();
-		}
+	}
+	
+	public static boolean installDpk(Context context, String dpkFile) {
+		InstallDpkTask installTask = new InstallDpkTask(context);
+		installTask.execute(dpkFile);
 		return true;
 	}
 	
 	public static boolean installArcadeFile(Context context, String arcadeFile) {
 		return false;//TODO: temporarily not supported
+	}
+	
+	private static boolean dpkUnzipped(Context context, File targetFolder) {
+		if(targetFolder.exists() && targetFolder.isDirectory()) {
+			File[] list = targetFolder.listFiles(new FilenameFilter(){
+
+				@Override
+				public boolean accept(File dir, String filename) {
+					if(filename.endsWith(".apk")) {
+						return true;
+					}
+					return false;
+				}});
+			if(list == null) return false;
+			//TODO: judge OBB existence
+			return true;
+		}
+		return false;
 	}
 	
     private static String unzipFile(Context context, String filePath) {
@@ -88,10 +164,11 @@ public class GameInstaller {
         
         Log.e("GameInstaller", "tmpFolder: " + tmpFolder.getAbsolutePath());
         Log.e("GameInstaller", "targetFolder: " + targetFolder.getAbsolutePath());
-        boolean ret = ZipCompressor.extract(file, tmpFolder, targetFolder);
+        boolean ret = true;
         
-        file.delete();
-        
+        if(!dpkUnzipped(context, targetFolder)){
+        	ret = ZipCompressor.extract(file, tmpFolder, targetFolder);
+        }
         if (ret) {
             return targetFolder.getAbsolutePath();
         } else {
@@ -101,9 +178,9 @@ public class GameInstaller {
     
     private static File getDir(Context context) {
     	if(isExternalStorageWritable()) {
-    		return Environment.getExternalStorageDirectory();
+    		return new File(Environment.getExternalStorageDirectory(), "injoeeDownloads");
     	} else {
-    		return context.getFilesDir();
+    		return new File(context.getFilesDir(), "injoeeDownloads");
     	}
     }
     private static boolean isExternalStorageWritable() {
@@ -141,6 +218,8 @@ public class GameInstaller {
 				copyFolder(srcFile, destFile);
 			}
 		} else {
+			if(dest.exists()) return; //TODO: should be more restrict
+			
 			InputStream in = new FileInputStream(src);
 			OutputStream out = new FileOutputStream(dest);
 
