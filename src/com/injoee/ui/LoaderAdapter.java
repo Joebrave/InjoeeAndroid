@@ -331,10 +331,16 @@ public class LoaderAdapter extends BaseAdapter {
 					break;
 					
 				case DownloadManager.STATUS_SUCCESSFUL:
-					btn.setText(mContext.getResources().getText(R.string.game_play));
 					viewHolder.ll_GameDownloadPanel.setVisibility(View.INVISIBLE);
 					viewHolder.ll_GameInfoPanel.setVisibility(View.VISIBLE);
-					gameInfo.gameStatus.status = DownloadStatus.GAME_DOWNLOADED;
+					
+					if(!GameInstaller.isApkInstalled(mContext, gameInfo.gamePackageName)) {
+						btn.setText(mContext.getResources().getText(R.string.game_install));
+						gameInfo.gameStatus.status = DownloadStatus.GAME_DOWNLOADED;
+					} else {
+						btn.setText(mContext.getResources().getText(R.string.game_play));
+						gameInfo.gameStatus.status = DownloadStatus.GAME_INSTALLED;
+					}
 					break;					
 				}
 				
@@ -394,7 +400,7 @@ public class LoaderAdapter extends BaseAdapter {
 			mDownloadManager.resumeDownload(gameInfo.gameStatus.id);
 			break;
 		case DownloadStatus.GAME_DOWNLOADED:
-			btn.setText(R.string.game_play);
+			btn.setText(R.string.game_install);
 
 			if(!GameInstaller.isApkInstalled(mContext, gameInfo.gamePackageName)) {
 				if(gameInfo.gameCategory.equals("APK")) {
@@ -406,6 +412,10 @@ public class LoaderAdapter extends BaseAdapter {
 			break;
 		case DownloadStatus.GAME_INSTALLED:
 			btn.setText(R.string.game_play);
+			if(gameInfo.gameCategory.equals("APK") || gameInfo.gameCategory.equals("DPK")) {
+				Intent intent = mContext.getPackageManager().getLaunchIntentForPackage(gameInfo.gamePackageName);
+				mContext.startActivity(intent);
+			}
 			break;
 		}
 

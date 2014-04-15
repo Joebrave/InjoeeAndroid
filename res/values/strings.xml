@@ -12,6 +12,7 @@
     <string name="featured_game_title">Featured Games</string>
     <string name="game_download">Download</string>
     <string name="game_play">Play</string>
+    <string name="game_install">Install</string>
     <string name="game_download_pause">Pause</string>
     <string name="game_download_continue">Continue</string>
     <string name="game_download_installed">Install</string>
@@ -31,6 +32,8 @@
     <string name="xlistview_footer_hint_ready">Lose to Load More</string>
     <string name="xListView_footer_hint_no_more">No More Game</string>
 
+	<string name="extracting">Extracting...</string>
+	
     <!-- test String -->
 
     <string name="test_game_name_short">Angry Bird</string>
