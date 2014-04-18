@@ -3,6 +3,7 @@ package com.injoee.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.ContentObserver;
@@ -30,6 +31,7 @@ import com.injoee.model.GameInfo.DownloadStatus;
 import com.injoee.providers.DownloadManager;
 import com.injoee.providers.DownloadManager.Request;
 import com.injoee.providers.downloads.DownloadService;
+import com.injoee.util.FeaturedGamesListProvider;
 
 public class LoaderAdapter extends BaseAdapter {
 
@@ -37,7 +39,7 @@ public class LoaderAdapter extends BaseAdapter {
 	private List<GameInfo> mFeaturedGames;
 	private List<GameInfo> mLocalGames;
 	private ImageLoader mImageLoader;
-
+	private FeaturedGamesListProvider gamesListProvider;
 	final private int mTitleColumnId;
 	final private int mStatusColumnId;
 	final private int mReasonColumnId;
@@ -77,6 +79,7 @@ public class LoaderAdapter extends BaseAdapter {
 		this.mImageLoader = new ImageLoader(context);
 		this.mDownloadManager = new DownloadManager(
 				context.getContentResolver(), context.getPackageName());
+		
 		startDownloadService(context);
 
 		this.mDownloadManager.setAccessAllDownloads(true);
@@ -156,7 +159,7 @@ public class LoaderAdapter extends BaseAdapter {
 
 		return 3; // type sum
 	}
-
+	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 		int localSize = this.mLocalGames.size();
@@ -246,9 +249,11 @@ public class LoaderAdapter extends BaseAdapter {
 
 			// handler
 			if (gameInfo != null) {
+				//set widgets values
 				viewHolder.tv_FeaturedGameName.setText(gameInfo.getGameName());
 				viewHolder.tv_FeaturedGameType.setText(gameInfo.getGameType());
 				viewHolder.tv_FeaturedGameSize.setText(gameInfo.getGamePackageSize());
+				mImageLoader.displayImage(gameInfo.getGameIcon(), viewHolder.iv_FeaturedGameIcon, false);
 				
 				int status = DownloadManager.STATUS_FAILED;
 				Log.e("Joe", "getView_id: " + gameInfo.gameStatus.id);

@@ -78,7 +78,11 @@
         <provider
             android:name="com.injoee.providers.downloads.DownloadProvider"
             android:authorities="com.injoee.downloads" />
-
+        
+        <provider
+            android:name="com.injoee.util.FeaturedGamesListProvider"
+            android:authorities="com.injoee.provider.FeaturedGames"/>
+        
         <service android:name="com.injoee.providers.downloads.DownloadService" />
 
         <receiver

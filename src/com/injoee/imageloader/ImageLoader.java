@@ -28,7 +28,7 @@ public class ImageLoader {
 	private AbstractFileCache fileCache;
 	private Map<ImageView, String> imageViews = Collections
 			.synchronizedMap(new WeakHashMap<ImageView, String>());
-	// Ïß³Ì³Ø
+	// ï¿½ß³Ì³ï¿½
 	private ExecutorService executorService;
 
 	public ImageLoader(Context context) {
@@ -36,17 +36,17 @@ public class ImageLoader {
 		executorService = Executors.newFixedThreadPool(5);
 	}
 
-	// ×îÖ÷ÒªµÄ·½·¨
+	// ï¿½ï¿½ï¿½ï¿½Òªï¿½Ä·ï¿½ï¿½ï¿½
 	public void displayImage(String url, ImageView imageView, boolean isLoadOnlyFromCache) {
 		imageViews.put(imageView, url);
-		// ÏÈ´ÓÄÚ´æ»º´æÖÐ²éÕÒ
+		// ï¿½È´ï¿½ï¿½Ú´æ»ºï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½
 
 		Bitmap bitmap = memoryCache.get(url);
 		if (bitmap != null)
 			imageView.setImageBitmap(bitmap);
 		else if (!isLoadOnlyFromCache){
 			
-			// ÈôÃ»ÓÐµÄ»°Ôò¿ªÆôÐÂÏß³Ì¼ÓÔØÍ¼Æ¬
+			// ï¿½ï¿½Ã»ï¿½ÐµÄ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì¼ï¿½ï¿½ï¿½Í¼Æ¬
 			queuePhoto(url, imageView);
 		}
 	}
@@ -56,10 +56,10 @@ public class ImageLoader {
 		executorService.submit(new PhotosLoader(p));
 	}
 
-	private Bitmap getBitmap(String url) {
+	public Bitmap getBitmap(String url) {
 		File f = fileCache.getFile(url);
 		
-		// ÏÈ´ÓÎÄ¼þ»º´æÖÐ²éÕÒÊÇ·ñÓÐ
+		// ï¿½È´ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½
 		Bitmap b = null;
 		if (f != null && f.exists()){
 			b = decodeFile(f);
@@ -67,7 +67,7 @@ public class ImageLoader {
 		if (b != null){
 			return b;
 		}
-		// ×îºó´ÓÖ¸¶¨µÄurlÖÐÏÂÔØÍ¼Æ¬
+		// ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½urlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼Æ¬
 		try {
 			Bitmap bitmap = null;
 			URL imageUrl = new URL(url);
@@ -88,7 +88,7 @@ public class ImageLoader {
 		}
 	}
 
-	// decodeÕâ¸öÍ¼Æ¬²¢ÇÒ°´±ÈÀýËõ·ÅÒÔ¼õÉÙÄÚ´æÏûºÄ£¬ÐéÄâ»ú¶ÔÃ¿ÕÅÍ¼Æ¬µÄ»º´æ´óÐ¡Ò²ÊÇÓÐÏÞÖÆµÄ
+	// decodeï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½Ò°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Í¼Æ¬ï¿½Ä»ï¿½ï¿½ï¿½ï¿½Ð¡Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½
 	private Bitmap decodeFile(File f) {
 		try {
 			// decode image size
@@ -145,14 +145,14 @@ public class ImageLoader {
 			if (imageViewReused(photoToLoad))
 				return;
 			BitmapDisplayer bd = new BitmapDisplayer(bmp, photoToLoad);
-			// ¸üÐÂµÄ²Ù×÷·ÅÔÚUIÏß³ÌÖÐ
+			// ï¿½ï¿½ï¿½ÂµÄ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½UIï¿½ß³ï¿½ï¿½ï¿½
 			Activity a = (Activity) photoToLoad.imageView.getContext();
 			a.runOnUiThread(bd);
 		}
 	}
 
 	/**
-	 * ·ÀÖ¹Í¼Æ¬´íÎ»
+	 * ï¿½ï¿½Ö¹Í¼Æ¬ï¿½ï¿½Î»
 	 * 
 	 * @param photoToLoad
 	 * @return
@@ -164,7 +164,7 @@ public class ImageLoader {
 		return false;
 	}
 
-	// ÓÃÓÚÔÚUIÏß³ÌÖÐ¸üÐÂ½çÃæ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½UIï¿½ß³ï¿½ï¿½Ð¸ï¿½ï¿½Â½ï¿½ï¿½ï¿½
 	class BitmapDisplayer implements Runnable {
 		Bitmap bitmap;
 		PhotoToLoad photoToLoad;

@@ -9,8 +9,10 @@ import org.json.JSONException;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.ContentObserver;
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -30,33 +32,34 @@ import com.injoee.R;
 import com.injoee.model.GameInfo;
 import com.injoee.ui.widget.LazyListView;
 import com.injoee.ui.widget.LazyListView.LazyListViewListener;
+import com.injoee.util.FeaturedGamesListProvider;
+import com.injoee.util.SavedSharePreferences;
 import com.injoee.webservice.GameListRequester;
 
 public class MainActivity extends Activity implements LazyListViewListener {
-
-	protected LazyListView game_ListView;
-
-	protected LinearLayout llNetworkProblem;
-	protected Button btnReconnectNetwork;
+	// Constant of the parameter
+	private final static int LOAD = 0;
+	private final static int REFRESH = 1;
+	private final static int LOAD_MORE = 2;
+	private final static int EACH_TIME_NUM = 2; // each time pull from the server;
+	
+	protected LazyListView mGameListView;
+	protected LinearLayout mNetworkProblem;
+	protected Button mBtnReconnectNetwork;
 	private ActionBar mActionBar;
-	private int mTotal; // count the total number of the featured game
-	private int mCurrentLoadedGamesNum; // to count the current games number in
-										// the list;
 	private ProgressBar mProgressBar;
 
-	// Constant of the parameter
-	private final int LOAD = 0;
-	private final int REFRESH = 1;
-	private final int LOAD_MORE = 2;
-	private final int EACH_TIME_NUM = 2; // each time pull from the server;
-	private static int mActionTag = -1;
-
-	private Time mTime = new Time();
-
-	private List<GameInfo> gameList = new ArrayList<GameInfo>();
+	private SavedSharePreferences mSharePreferences;
+	
+	private List<GameInfo> mGameList = new ArrayList<GameInfo>();
+	private int mTotal; // count the total number of the featured game
 	
 	private LoaderAdapter mAdapter;
 	private MyContentObserver mContentObserver;
+	
+	private Time mTime = new Time();
+	private int mActionTag = -1;
+	
 	/**
 	 * Called when there's a change to the downloads database.
 	 */
@@ -79,29 +82,31 @@ public class MainActivity extends Activity implements LazyListViewListener {
 	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main_list);
 
 		mActionBar = getActionBar();
 		mActionBar.setIcon(R.drawable.actionbar_icon);
 
-		super.onCreate(savedInstanceState);
+		mSharePreferences = SavedSharePreferences.getInstance(this);
 
-		setContentView(R.layout.main_list);
-		new FetchGamesTask().execute(LOAD);
-
-		game_ListView = (LazyListView) findViewById(R.id.lv_Games);
-		game_ListView.setPullLoadEnable(true);
-		game_ListView.setLazyListViewListener(this);
+		mTotal = mSharePreferences.getGameListTotal();
+		
+		mGameListView = (LazyListView) findViewById(R.id.lv_Games);
+		mGameListView.setPullLoadEnable(true);
+		mGameListView.setLazyListViewListener(this);
 		mAdapter = new LoaderAdapter(MainActivity.this);
 
 		mContentObserver = new MyContentObserver();
 		
-		llNetworkProblem = (LinearLayout) findViewById(R.id.ll_network_problem_panel);
-		btnReconnectNetwork = (Button) findViewById(R.id.btn_reconnect_internet);
+		mNetworkProblem = (LinearLayout) findViewById(R.id.ll_network_problem_panel);
+		mBtnReconnectNetwork = (Button) findViewById(R.id.btn_reconnect_internet);
 
-		game_ListView.setAdapter(mAdapter);
-		game_ListView.setOnItemClickListener(listItemClickListener);
-
-		btnReconnectNetwork.setOnClickListener(networkReconnectClickListner);
+		mGameListView.setAdapter(mAdapter);
+		mGameListView.setOnItemClickListener(mListItemClickListener);
+		mBtnReconnectNetwork.setOnClickListener(mNetworkReconnectClickListner);
+		
+		loadList();  // load list from internet or local database 
 	}
 
 	@Override
@@ -120,8 +125,6 @@ public class MainActivity extends Activity implements LazyListViewListener {
 
 		@Override
 		protected void onPreExecute() {
-			// TODO Auto-generated method stub
-
 			super.onPreExecute();
 			mProgressBar = (ProgressBar) findViewById(R.id.pb_featured_game_progress);
 			mProgressBar.setVisibility(View.VISIBLE);
@@ -130,61 +133,37 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		@Override
 		protected List<GameInfo> doInBackground(Integer... params) {
 			GameListRequester gameDB = new GameListRequester();
-
+			int start = 0;
+			int count = EACH_TIME_NUM;
+			
 			if (params[0] == LOAD || params[0] == REFRESH) {
-
-				try {
-					gameList = gameDB.doRequest(0, EACH_TIME_NUM, true);
-
-					Log.e("return size is!", String.valueOf(gameList.size()));
-
-					mTotal = gameDB.total;
-
-					mActionTag = LOAD;
-
-				} catch (JSONException e) {
-
-					e.printStackTrace();
-
-					return null;
-
-				} catch (IOException e) {
-
-					e.printStackTrace();
-					return null;
-
-				}
-
-				return gameList;
-
+				start = 0;
+				mActionTag = LOAD;
 			} else if (params[0] == LOAD_MORE) {
-
-				List<GameInfo> newGameList = new ArrayList<GameInfo>();
-
-				try {
-					// add one by one
-
-					mActionTag = LOAD_MORE;
-
-					newGameList = gameDB.doRequest(mCurrentLoadedGamesNum,
-							EACH_TIME_NUM);
-
-					mTotal = gameDB.total;
-
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
-				} catch (IOException e) {
-					e.printStackTrace();
-					return null;
+				start = mGameList.size();
+				mActionTag = LOAD_MORE;
+			}
+			
+			List<GameInfo> retList = null;
+			try {
+				retList = gameDB.doRequest(start, count);
+				if(retList != null) {
+					Log.e("return size is!", String.valueOf(retList.size()));
 				}
-
-				return newGameList;
-
-			} else
-				return null;
-
+				mTotal = gameDB.total;				
+			} catch (JSONException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			if(retList != null) {
+				if(mActionTag == LOAD) {
+					clearLocalData();
+				}
+				insertToLocalData(retList);
+			}
+			return retList;
 		}
 
 		@Override
@@ -192,50 +171,34 @@ public class MainActivity extends Activity implements LazyListViewListener {
 			super.onPostExecute(result);
 
 			if (result != null) {
-
 				if (mActionTag == LOAD) {  // when load or refresh, just clear the result and update the data
-					
-					mAdapter.setFeaturedGames(result);
-					mAdapter.notifyDataSetInvalidated();
-					mCurrentLoadedGamesNum = result.size();
-					
-				}
-				else if(mActionTag == LOAD_MORE)
-				{
-					for (GameInfo gameInfo : result) {
-						gameList.add(gameInfo);
-					}
-					
-					mAdapter.setFeaturedGames(gameList);
-					mAdapter.notifyDataSetInvalidated();
-					mCurrentLoadedGamesNum = gameList.size();
+					mGameList = result;
+				} else if(mActionTag == LOAD_MORE) {
+					mGameList.addAll(result);
 				}
 				
-				llNetworkProblem.setVisibility(View.GONE);
+				mAdapter.setFeaturedGames(mGameList);
+				mAdapter.notifyDataSetInvalidated();
+			
+				mNetworkProblem.setVisibility(View.GONE);
 				mProgressBar.setVisibility(View.GONE);
-				game_ListView.setPullLoadEnable(true);
+				mGameListView.setPullLoadEnable(true);
 
-				if (mTotal == mCurrentLoadedGamesNum) // if reach the end of the list disable the footer
-				{
-					game_ListView.setPullLoadEnable(false);  
+				if (mTotal == mGameList.size()) {// if reach the end of the list disable the footer
+					mGameListView.setPullLoadEnable(false);  
 				}
-
+				
+				mSharePreferences.setGameListTotal(mTotal);
 			} else {
-				llNetworkProblem.setVisibility(View.VISIBLE);
+				mNetworkProblem.setVisibility(View.VISIBLE);
 				mProgressBar.setVisibility(View.GONE);
 			}
-
+			
+			mIsFetching = false;
 		}
-
-		@Override
-		protected void onProgressUpdate(Integer... values) {
-			// TODO Auto-generated method stub
-			super.onProgressUpdate(values);
-		}
-
 	};
 
-	OnItemClickListener listItemClickListener = new OnItemClickListener() {
+	OnItemClickListener mListItemClickListener = new OnItemClickListener() {
 
 		@Override
 		public void onItemClick(AdapterView<?> arg0, View featured_Game_Item,
@@ -257,7 +220,7 @@ public class MainActivity extends Activity implements LazyListViewListener {
 
 	};
 
-	OnClickListener networkReconnectClickListner = new OnClickListener() {
+	OnClickListener mNetworkReconnectClickListner = new OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
@@ -265,20 +228,26 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		}
 	};
 
+	private boolean mIsFetching = false;
+	private void fetchGames(int loadType) {
+		if(mIsFetching) return;
+		
+		FetchGamesTask fetchTask = new FetchGamesTask();
+		fetchTask.execute(loadType);
+		
+		mIsFetching = true;
+	}
+	
 	@Override
 	public void onRefresh() {
-
-		new FetchGamesTask().execute(REFRESH);
-
+		fetchGames(REFRESH);
 		onLoad();
 
 	}
 
 	@Override
 	public void onLoadMore() {
-
-		new FetchGamesTask().execute(LOAD_MORE);
-
+		fetchGames(LOAD_MORE);
 		onLoad();
 	}
 
@@ -287,9 +256,9 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		int hour = mTime.hour;
 		int minute = mTime.minute;
 		String time = hour + ":" + minute;
-		game_ListView.stopRefresh();
-		game_ListView.stopLoadMore();
-		game_ListView.setRefreshTime(time);
+		mGameListView.stopRefresh();
+		mGameListView.stopLoadMore();
+		mGameListView.setRefreshTime(time);
 	}
 
 	@Override
@@ -302,5 +271,74 @@ public class MainActivity extends Activity implements LazyListViewListener {
 	protected void onPause() {
 		super.onPause();
 		this.mAdapter.unregisterObserver(mContentObserver);
+	}
+	
+	public void loadList()
+	{
+		if(mSharePreferences.needRefresh()){  //need to load from the internet 
+			fetchGames(LOAD);
+		} else{
+			boolean loaded = loadLocalData();
+			
+			if(!loaded) {//check if there's data in the sharepreference if not load from internet
+				fetchGames(LOAD);
+			}
+		}
+	}
+
+	void insertToLocalData(List<GameInfo> gameList){
+		for(GameInfo gameInfo : gameList) {
+			ContentValues values = new ContentValues();
+			//add the value to the contentprovider  by qian
+			values.put(FeaturedGamesListProvider.CATEGORY, gameInfo.getGameCategory());
+			values.put(FeaturedGamesListProvider.ID, gameInfo.getGameId());
+			values.put(FeaturedGamesListProvider.DOWNLOADURL, gameInfo.getGameDownLoadURL());
+			values.put(FeaturedGamesListProvider.NAME, gameInfo.getGameName());
+			values.put(FeaturedGamesListProvider.PACKAGENAME, gameInfo.getGamePackageName());
+			values.put(FeaturedGamesListProvider.PACKAGESIZE, gameInfo.getGamePackageSize());
+			values.put(FeaturedGamesListProvider.TYPE, gameInfo.getGameType()); //there's problem with bitmap store method...
+			values.put(FeaturedGamesListProvider.ICON, gameInfo.getGameIcon());
+			getContentResolver().insert(FeaturedGamesListProvider.CONTENT_URI, values);
+		}
+	}
+	
+	public boolean loadLocalData()
+	{	
+		Cursor c = getContentResolver().query(FeaturedGamesListProvider.CONTENT_URI, null, null, null, null);
+		if( c == null)return false; 
+		
+		if(!c.moveToFirst()) {
+			c.close();
+			return false;
+		} else {
+			do {
+				GameInfo gameInfo = new GameInfo();
+				gameInfo.gameIcon = c.getString(c.getColumnIndex(FeaturedGamesListProvider.ICON));
+				gameInfo.gameName = c.getString(c.getColumnIndex(FeaturedGamesListProvider.NAME));
+				gameInfo.gameCategory = c.getString(c.getColumnIndex(FeaturedGamesListProvider.CATEGORY));
+				gameInfo.gamePackageName = c.getString(c.getColumnIndex(FeaturedGamesListProvider.PACKAGENAME));
+				gameInfo.gamePackageSize = c.getString(c.getColumnIndex(FeaturedGamesListProvider.PACKAGESIZE));
+				gameInfo.gameType = c.getString(c.getColumnIndex(FeaturedGamesListProvider.TYPE));
+				gameInfo.gameDownLoadURL = c.getString(c.getColumnIndex(FeaturedGamesListProvider.DOWNLOADURL));
+				gameInfo.gameId = c.getString(c.getColumnIndex(FeaturedGamesListProvider.ID));
+				
+				mGameList.add(gameInfo);
+			} while(c.moveToNext());
+			
+			c.close();
+			
+			if(mGameList != null && mTotal == mGameList.size()) {
+				mGameListView.setPullLoadEnable(false);
+			}	
+			mAdapter.setFeaturedGames(mGameList);
+			mAdapter.notifyDataSetChanged();
+			
+			return true;
+		}
+	}
+	
+	public void clearLocalData()
+	{
+		getContentResolver().delete(FeaturedGamesListProvider.CONTENT_URI, null, null);
 	}
 }
