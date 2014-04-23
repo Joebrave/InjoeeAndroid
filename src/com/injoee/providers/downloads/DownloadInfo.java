@@ -527,7 +527,7 @@ public class DownloadInfo {
     void notifyPauseDueToSize(boolean isWifiRequired) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(getAllDownloadsUri());
-        intent.setClassName(SizeLimitActivity.class.getPackage().getName(),
+        intent.setClassName(mContext.getPackageName(),
                 SizeLimitActivity.class.getName());
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(EXTRA_IS_WIFI_REQUIRED, isWifiRequired);

@@ -18,19 +18,27 @@ public class GameDetailsRequester {
 	
 	Constant constant = new Constant();  //server base url
 	
-	public GameDetailsRequester() {
+	private boolean byPackage = false;
+	
+	public GameDetailsRequester(boolean byPackageName) {
 
+		this.byPackage = byPackageName;
 	}
 
 	// TODO: please use HttpURLConnection
-	public GameInfoDetail doRequest(String gameId) throws IOException, JSONException {
+	public GameInfoDetail doRequest(String idParam) throws IOException, JSONException {
 		// TODO: to be implemented
 
 		GameInfoDetail gameDetailItem = new GameInfoDetail();
 
 		String path = constant.SERVER_URL_PREFIX + "detail.php?";
 
-		String param = "id=" + gameId;
+		String param = "";
+		
+		if(byPackage)      //by packagename or by id
+			param = "pkgname=" + idParam;
+		else
+			param = "id=" +idParam;
 
 		path = path + param;
 

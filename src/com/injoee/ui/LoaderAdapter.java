@@ -3,6 +3,7 @@ package com.injoee.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.appflood.AppFlood;
 import com.injoee.R;
 import com.injoee.func.GameInstaller;
 import com.injoee.imageloader.ImageLoader;
@@ -32,6 +34,7 @@ import com.injoee.providers.DownloadManager;
 import com.injoee.providers.DownloadManager.Request;
 import com.injoee.providers.downloads.DownloadService;
 import com.injoee.util.FeaturedGamesListProvider;
+import com.injoee.util.SavedSharePreferences;
 
 public class LoaderAdapter extends BaseAdapter {
 
@@ -39,7 +42,7 @@ public class LoaderAdapter extends BaseAdapter {
 	private List<GameInfo> mFeaturedGames;
 	private List<GameInfo> mLocalGames;
 	private ImageLoader mImageLoader;
-	private FeaturedGamesListProvider gamesListProvider;
+	private SavedSharePreferences downloadedTimesSharePreference;
 	final private int mTitleColumnId;
 	final private int mStatusColumnId;
 	final private int mReasonColumnId;
@@ -81,7 +84,9 @@ public class LoaderAdapter extends BaseAdapter {
 				context.getContentResolver(), context.getPackageName());
 		
 		startDownloadService(context);
-
+		
+		downloadedTimesSharePreference = SavedSharePreferences.getInstance(context);
+		
 		this.mDownloadManager.setAccessAllDownloads(true);
 		DownloadManager.Query baseQuery = new DownloadManager.Query()
 											.setOnlyIncludeVisibleInDownloadsUi(true);
@@ -253,6 +258,7 @@ public class LoaderAdapter extends BaseAdapter {
 				viewHolder.tv_FeaturedGameName.setText(gameInfo.getGameName());
 				viewHolder.tv_FeaturedGameType.setText(gameInfo.getGameType());
 				viewHolder.tv_FeaturedGameSize.setText(gameInfo.getGamePackageSize());
+				viewHolder.tv_FeaturedGameID.setText(gameInfo.getGameId());
 				mImageLoader.displayImage(gameInfo.getGameIcon(), viewHolder.iv_FeaturedGameIcon, false);
 				
 				int status = DownloadManager.STATUS_FAILED;
@@ -393,6 +399,12 @@ public class LoaderAdapter extends BaseAdapter {
 	protected void performClicked(Button btn, GameInfo gameInfo) {
 		switch(gameInfo.gameStatus.status) {
 		case DownloadStatus.GAME_NOT_DOWNLOAD:
+			
+			boolean donateVote = advPopupJudger();
+			
+			if(donateVote)
+				showAdDailog();
+			
 			Log.e("Joe", "performClicked_id: " + gameInfo.gameStatus.id);
 			gameInfo.gameStatus.id = startDownload(gameInfo.gameDownLoadURL, gameInfo.gameId);
 			refresh();
@@ -406,7 +418,10 @@ public class LoaderAdapter extends BaseAdapter {
 			break;
 		case DownloadStatus.GAME_DOWNLOADED:
 			btn.setText(R.string.game_install);
-
+			
+			downloadedTimesSharePreference.setDownloadedTime();//count for the adv
+			downloadedTimesSharePreference.setDonateVote(true);
+			
 			if(!GameInstaller.isApkInstalled(mContext, gameInfo.gamePackageName)) {
 				if(gameInfo.gameCategory.equals("APK")) {
 					GameInstaller.installApk(mContext, gameInfo.gameStatus.filePath);
@@ -485,5 +500,47 @@ public class LoaderAdapter extends BaseAdapter {
 		this.mDownloadsCursor = mDownloadManager.query(new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true));
 		
 		registerObserver(mObserver);
+	}
+	
+	private boolean advPopupJudger()
+	{
+		int downloadedTimes = downloadedTimesSharePreference.getDownloadedTime();
+		boolean donateVote = downloadedTimesSharePreference.getDonateVote();
+		
+		if(downloadedTimes/3==0&& donateVote == true)
+			return true;
+		else
+			return false;
+	}
+	
+	private void showAdDailog()
+	{
+		final Dialog dialog = new Dialog(mContext);
+		
+		dialog.setContentView(R.layout.ad_dialog);
+		dialog.setTitle(mContext.getResources().getString(R.string.ad_favrite_title));
+		
+		LinearLayout llReject = (LinearLayout) dialog.findViewById(R.id.ll_ad_favor_reject);
+		LinearLayout llDonate = (LinearLayout) dialog.findViewById(R.string.ad_favrite_donate);
+		
+		llReject.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+			
+				downloadedTimesSharePreference.setDonateVote(false);
+				dialog.dismiss();
+			}
+		});
+		
+		llDonate.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+			
+				AppFlood.showInterstitial((MainActivity)mContext);
+			}
+		});
+		
 	}
 }

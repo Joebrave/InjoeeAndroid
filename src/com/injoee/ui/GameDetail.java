@@ -4,20 +4,31 @@ import java.io.IOException;
 
 import org.json.JSONException;
 
+import com.appflood.AppFlood;
 import com.injoee.R;
-
+import com.injoee.func.GameInstaller;
 import com.injoee.imageloader.ImageLoader;
 import com.injoee.model.GameInfoDetail;
-
+import com.injoee.model.GameInfoDetail.DownloadStatus;
+import com.injoee.providers.DownloadManager;
+import com.injoee.providers.DownloadManager.Request;
+import com.injoee.providers.downloads.DownloadService;
+import com.injoee.util.SavedSharePreferences;
 import com.injoee.webservice.GameDetailsRequester;
 import com.injoee.webservice.Voter;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
+import android.database.ContentObserver;
+import android.database.Cursor;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -32,8 +43,24 @@ import android.widget.Toast;
 
 public class GameDetail extends Activity {
 	private GameInfoDetail mGameDetail;
-	private static GameDetailViewHolder sGameDetailViewHolder;
+	private GameDetailViewHolder mGameDetailViewHolder;
 	private FetchGameTask mFetchGameTask = new FetchGameTask();
+	private SavedSharePreferences downloadedTimesSharePreference;
+	private static boolean byPackageName;
+	
+	private int mTitleColumnId;
+	private int mStatusColumnId;
+	private int mReasonColumnId;
+	private int mTotalBytesColumnId;
+	private int mCurrentBytesColumnId;
+	private int mMediaTypeColumnId;
+	private int mDateColumnId;
+	private int mIdColumnId;
+	private int mLocalUriColumnId;
+	
+	
+	DownloadManager mDownloadManager;
+	Cursor mDownloadsCursor;
 
 	@SuppressLint("NewApi")
 	@Override
@@ -48,40 +75,237 @@ public class GameDetail extends Activity {
 		Intent intent = getIntent();
 
 		String gameID = intent.getStringExtra("game_id");
-		if (sGameDetailViewHolder == null) {
-			sGameDetailViewHolder = new GameDetailViewHolder();
-			sGameDetailViewHolder.ivGameIcon = (ImageView) findViewById(R.id.iv_game_detail_icon);
-			sGameDetailViewHolder.tvGameType = (TextView) findViewById(R.id.tv_game_type_detail);
-			sGameDetailViewHolder.tvGamePackageSize = (TextView) findViewById(R.id.tv_game_size_detail);
-			sGameDetailViewHolder.ivScreenShot1 = (ImageView) findViewById(R.id.iv_image1);
-			sGameDetailViewHolder.ivScreenShot2 = (ImageView) findViewById(R.id.iv_image2);
-			sGameDetailViewHolder.ivScreenShot3 = (ImageView) findViewById(R.id.iv_image3);
-			sGameDetailViewHolder.ivScreenShot4 = (ImageView) findViewById(R.id.iv_image4);
-			sGameDetailViewHolder.tvDescription = (TextView) findViewById(R.id.tv_game_detail_description);
-			sGameDetailViewHolder.tvReputationGoodNum = (TextView) findViewById(R.id.tv_reputation_good_num);
-			sGameDetailViewHolder.tvReputationBadNum = (TextView) findViewById(R.id.tv_reputation_bad_num);
-			sGameDetailViewHolder.btnReputationBad = (LinearLayout) findViewById(R.id.ll_reputation_bad);
-			sGameDetailViewHolder.btnReputationGood = (LinearLayout) findViewById(R.id.ll_reputation_good);
-			sGameDetailViewHolder.btnReconnect = (Button) findViewById(R.id.btn_reconnect_internet_game_detail);
-			sGameDetailViewHolder.llNetworkProblemPanel = (LinearLayout) findViewById(R.id.ll_network_problem_panel_game_detail);
-			sGameDetailViewHolder.pbGameDetail = (ProgressBar) findViewById(R.id.pb_game_detail_progress_bar);
-			sGameDetailViewHolder.rlGameDetail = (RelativeLayout) findViewById(R.id.rl_game_detail_panel);
-		}
+		String gamePackageName = intent.getStringExtra("package_name");
+		
+		mGameDetailViewHolder = new GameDetailViewHolder();
+		mGameDetailViewHolder.ivGameIcon = (ImageView) findViewById(R.id.iv_game_detail_icon);
+		mGameDetailViewHolder.tvGameType = (TextView) findViewById(R.id.tv_game_type_detail);
+		mGameDetailViewHolder.tvGamePackageSize = (TextView) findViewById(R.id.tv_game_size_detail);
+		mGameDetailViewHolder.ivScreenShot1 = (ImageView) findViewById(R.id.iv_image1);
+		mGameDetailViewHolder.ivScreenShot2 = (ImageView) findViewById(R.id.iv_image2);
+		mGameDetailViewHolder.ivScreenShot3 = (ImageView) findViewById(R.id.iv_image3);
+		mGameDetailViewHolder.ivScreenShot4 = (ImageView) findViewById(R.id.iv_image4);
+		mGameDetailViewHolder.tvDescription = (TextView) findViewById(R.id.tv_game_detail_description);
+		mGameDetailViewHolder.tvReputationGoodNum = (TextView) findViewById(R.id.tv_reputation_good_num);
+		mGameDetailViewHolder.tvReputationBadNum = (TextView) findViewById(R.id.tv_reputation_bad_num);
+		mGameDetailViewHolder.btnReputationBad = (LinearLayout) findViewById(R.id.ll_reputation_bad);
+		mGameDetailViewHolder.btnReputationGood = (LinearLayout) findViewById(R.id.ll_reputation_good);
+		mGameDetailViewHolder.btnReconnect = (Button) findViewById(R.id.btn_reconnect_internet_game_detail);
+		mGameDetailViewHolder.llNetworkProblemPanel = (LinearLayout) findViewById(R.id.ll_network_problem_panel_game_detail);
+		mGameDetailViewHolder.pbGameDetail = (ProgressBar) findViewById(R.id.pb_game_detail_progress_bar);
+		mGameDetailViewHolder.rlGameDetail = (RelativeLayout) findViewById(R.id.rl_game_detail_panel);
+		mGameDetailViewHolder.btnDownload = (Button) findViewById(R.id.btn_gamedetail_download);
 
-		mFetchGameTask.execute(gameID);
-		sGameDetailViewHolder.btnReconnect.setTag(gameID);
+		String param = "";
+		
+		if(gameID == null && gamePackageName != null)   //by packagename searching request the result;
+		{
+			param = gamePackageName;
+			byPackageName = true;
+		}
+		else if(gameID != null && gamePackageName == null)
+		{
+			param = gameID;
+			byPackageName = false;
+		}
+		mFetchGameTask.execute(param);
+		mGameDetailViewHolder.btnReconnect.setTag(gameID);
 		// String featured_Game_Name = intent.getStringExtra("game_title");
 
 		// Toast.makeText(GameDetail.this, featured_Game_Name,
 		// Toast.LENGTH_SHORT).show();
 
-		sGameDetailViewHolder.btnReputationBad
+		mGameDetailViewHolder.btnReputationBad
 				.setOnClickListener(reputationVoterClickListener);
-		sGameDetailViewHolder.btnReputationGood
+		mGameDetailViewHolder.btnReputationGood
 				.setOnClickListener(reputationVoterClickListener);
-		sGameDetailViewHolder.btnReconnect
+		mGameDetailViewHolder.btnReconnect
 				.setOnClickListener(reputationVoterClickListener);
+		
+		//downloadmanager
+		mDownloadManager = new DownloadManager(getContentResolver(), getPackageName());
+		
+		startDownloadService(this);
+		
+		mDownloadManager.setAccessAllDownloads(true);
+		DownloadManager.Query baseQuery = new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true);
+		mDownloadsCursor = mDownloadManager.query(baseQuery);
+		
+		Cursor cursor = this.mDownloadsCursor;
+		
+		mIdColumnId = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_ID);
+		mTitleColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE);
+		mStatusColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS);
+		mReasonColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON);
+		mTotalBytesColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+		mCurrentBytesColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+		mMediaTypeColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE);
+		mDateColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP);
+		mLocalUriColumnId = cursor
+				.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI);
+	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+	}
 
+	private void updateDownloadStatus() {
+		if(mGameDetail == null) return;
+		
+		int status = DownloadManager.STATUS_FAILED;
+		//Log.e("Joe", "getView_id: " + mGameDetail.gameStatus.id);
+		DownloadManager.Query query = new DownloadManager.Query();
+		if(mGameDetail.gameStatus.id <= 0) {
+			query = query.setFilterByItemId(mGameDetail.gameId);
+		} else {
+			query = query.setFilterById(mGameDetail.gameStatus.id);
+		}
+		Cursor cursorExecution = mDownloadManager.query(query);
+		if(cursorExecution != null) {
+			if(cursorExecution.getCount() != 0) {
+				cursorExecution.moveToFirst();
+				mGameDetail.gameStatus.id = cursorExecution.getLong(this.mIdColumnId);
+				long totalBytes = cursorExecution.getLong(this.mTotalBytesColumnId);
+				long currentBytes = cursorExecution.getLong(this.mCurrentBytesColumnId);
+				
+				Log.e("Joe", "toalBytesColId: " + this.mTotalBytesColumnId + ", bytes: " + totalBytes);
+				Log.e("Joe", "curBytesColId: " + this.mCurrentBytesColumnId + ", bytes: " + currentBytes);
+				
+				status = cursorExecution.getInt(this.mStatusColumnId);
+				String localUri = cursorExecution.getString(this.mLocalUriColumnId);
+				mGameDetail.gameStatus.filePath = localUri;
+				Log.e("Joe", "filePath: " + localUri);
+			}
+			cursorExecution.close();
+		}
+		
+		Button btn = mGameDetailViewHolder.btnDownload;
+		
+		switch(status) {
+		case DownloadManager.STATUS_FAILED:
+			btn.setText(getResources().getText(R.string.game_download));
+			mGameDetail.gameStatus.status = DownloadStatus.GAME_NOT_DOWNLOAD;
+			break;
+			
+		case DownloadManager.STATUS_PAUSED:
+			btn.setText(getResources().getText(R.string.game_download_continue));
+			mGameDetail.gameStatus.status = DownloadStatus.GAME_DOWNLOAD_PAUSED;
+			break;			
+		case DownloadManager.STATUS_PENDING:
+		case DownloadManager.STATUS_RUNNING:
+			btn.setText(getResources().getText(R.string.game_download_pause));
+			mGameDetail.gameStatus.status = DownloadStatus.GAME_DOWNLOADING;
+			break;			
+		case DownloadManager.STATUS_SUCCESSFUL:
+			if(!GameInstaller.isApkInstalled(this, mGameDetail.gamePackageName)) {
+				btn.setText(this.getResources().getText(R.string.game_install));
+				mGameDetail.gameStatus.status = DownloadStatus.GAME_DOWNLOADED;
+			} else {
+				btn.setText(getResources().getText(R.string.game_play));
+				mGameDetail.gameStatus.status = DownloadStatus.GAME_INSTALLED;
+			}
+			break;					
+		}
+		
+		btn.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				performClicked((Button)v, mGameDetail);				
+			}
+		});
+		
+	}
+	
+	protected void performClicked(Button btn, GameInfoDetail gameInfoDetail) {
+		switch(gameInfoDetail.gameStatus.status) {
+		case DownloadStatus.GAME_NOT_DOWNLOAD:
+			
+			boolean donateVote = advPopupJudger();
+			
+			if(donateVote)
+				showAdDailog();
+			
+			Log.e("Joe", "performClicked_id: " + gameInfoDetail.gameStatus.id);
+			gameInfoDetail.gameStatus.id = startDownload(gameInfoDetail.gameDownLoadURL, gameInfoDetail.gameId);
+			refresh();
+			break;
+			
+		case DownloadStatus.GAME_DOWNLOADING:
+			mDownloadManager.pauseDownload(gameInfoDetail.gameStatus.id);
+			break;
+		case DownloadStatus.GAME_DOWNLOAD_PAUSED:
+			mDownloadManager.resumeDownload(gameInfoDetail.gameStatus.id);
+			break;
+		case DownloadStatus.GAME_DOWNLOADED:
+			btn.setText(R.string.game_install);
+			
+			downloadedTimesSharePreference.setDownloadedTime();//count for the adv
+			downloadedTimesSharePreference.setDonateVote(true);
+			
+			if(!GameInstaller.isApkInstalled(this, gameInfoDetail.gamePackageName)) {
+				if(gameInfoDetail.gameCategory.equals("APK")) {
+					GameInstaller.installApk(this, gameInfoDetail.gameStatus.filePath);
+				} else if(gameInfoDetail.gameCategory.equals("DPK")) {
+					GameInstaller.installDpk(this, gameInfoDetail.gameStatus.filePath);
+				}
+			}
+			break;
+		case DownloadStatus.GAME_INSTALLED:
+			btn.setText(R.string.game_play);
+			if(gameInfoDetail.gameCategory.equals("APK") || gameInfoDetail.gameCategory.equals("DPK")) {
+				Intent intent = getPackageManager().getLaunchIntentForPackage(gameInfoDetail.gamePackageName);
+				this.startActivity(intent);
+			}
+			break;
+		}
+
+	}
+	
+	
+	private long startDownload(String url, String itemId) {
+		Uri srcUri = Uri.parse(url);
+		DownloadManager.Request request = new Request(srcUri);
+		request.setItemId(itemId);
+		request.setDestinationInExternalPublicDir(
+				Environment.DIRECTORY_DOWNLOADS, "/");
+		request.setDescription("Just for test");
+		request.setShowRunningNotification(false);
+		long ret = mDownloadManager.enqueue(request);
+		return ret;
+	}
+
+	private void startDownloadService(Context context) {
+		Intent intent = new Intent();
+		intent.setClass(context, DownloadService.class);
+		context.startService(intent);
+	}
+
+	private ContentObserver mObserver;
+	public void unregisterObserver(ContentObserver observer) {
+		this.mDownloadsCursor.unregisterContentObserver(observer);
+	}
+	
+	public void registerObserver(ContentObserver observer) {
+		mObserver = observer;
+		this.mDownloadsCursor.registerContentObserver(observer);
+	}
+	
+	public void refresh() {
+		unregisterObserver(mObserver);
+		
+		this.mDownloadsCursor.close();
+		this.mDownloadsCursor = mDownloadManager.query(new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true));
+		
+		registerObserver(mObserver);
 	}
 
 	OnClickListener reputationVoterClickListener = new OnClickListener() {
@@ -133,17 +357,17 @@ public class GameDetail extends Activity {
 			// TODO Auto-generated method stub
 			super.onPreExecute();
 
-			sGameDetailViewHolder.rlGameDetail.setVisibility(View.INVISIBLE);
-			sGameDetailViewHolder.llNetworkProblemPanel
+			mGameDetailViewHolder.rlGameDetail.setVisibility(View.INVISIBLE);
+			mGameDetailViewHolder.llNetworkProblemPanel
 					.setVisibility(View.INVISIBLE);
-			sGameDetailViewHolder.pbGameDetail.setVisibility(View.VISIBLE);
+			mGameDetailViewHolder.pbGameDetail.setVisibility(View.VISIBLE);
 
 		}
 
 		@Override
 		protected GameInfoDetail doInBackground(String... params) {
 			// TODO Auto-generated method stub
-			GameDetailsRequester gameInfoDetail = new GameDetailsRequester();
+			GameDetailsRequester gameInfoDetail = new GameDetailsRequester(byPackageName);
 			GameInfoDetail gameDetail = new GameInfoDetail();
 			try {
 				gameDetail = gameInfoDetail.doRequest(params[0]);
@@ -165,9 +389,9 @@ public class GameDetail extends Activity {
 
 			if (gameInfoDetail == null) {
 				// TODO: Network exception
-				sGameDetailViewHolder.rlGameDetail.setVisibility(View.GONE);
-				sGameDetailViewHolder.pbGameDetail.setVisibility(View.GONE);
-				sGameDetailViewHolder.llNetworkProblemPanel
+				mGameDetailViewHolder.rlGameDetail.setVisibility(View.GONE);
+				mGameDetailViewHolder.pbGameDetail.setVisibility(View.GONE);
+				mGameDetailViewHolder.llNetworkProblemPanel
 						.setVisibility(View.VISIBLE);
 			} else {
 
@@ -175,31 +399,31 @@ public class GameDetail extends Activity {
 						getApplicationContext());
 
 				imageLoader.displayImage(gameInfoDetail.getGameIcon(),
-						sGameDetailViewHolder.ivGameIcon, false);
+						mGameDetailViewHolder.ivGameIcon, false);
 
 				loadscreenShots(gameInfoDetail.gameScreenShots, imageLoader);
 
-				sGameDetailViewHolder.tvDescription
+				mGameDetailViewHolder.tvDescription
 						.setText(gameInfoDetail.gameDescription);
 
-				sGameDetailViewHolder.tvGamePackageSize
+				mGameDetailViewHolder.tvGamePackageSize
 						.setText(gameInfoDetail.gamePackageSize);
 
-				sGameDetailViewHolder.tvGameType
+				mGameDetailViewHolder.tvGameType
 						.setText(gameInfoDetail.gameType);
 
-				sGameDetailViewHolder.tvReputationBadNum.setText(String
+				mGameDetailViewHolder.tvReputationBadNum.setText(String
 						.valueOf(gameInfoDetail.gameBadVote));
 
-				sGameDetailViewHolder.tvReputationGoodNum.setText(String
+				mGameDetailViewHolder.tvReputationGoodNum.setText(String
 						.valueOf(gameInfoDetail.gameGoodVote));
 
-				sGameDetailViewHolder.rlGameDetail.setVisibility(View.VISIBLE);
+				mGameDetailViewHolder.rlGameDetail.setVisibility(View.VISIBLE);
 
-				sGameDetailViewHolder.pbGameDetail.setVisibility(View.GONE);
+				mGameDetailViewHolder.pbGameDetail.setVisibility(View.GONE);
 
 			}
-
+			updateDownloadStatus();
 		}
 
 	}
@@ -258,11 +482,11 @@ public class GameDetail extends Activity {
 
 				if (result.voteType == ReputationVoteParam.TYPE_GOOD) {
 					mGameDetail.gameGoodVote++;
-					sGameDetailViewHolder.tvReputationGoodNum.setText(String
+					mGameDetailViewHolder.tvReputationGoodNum.setText(String
 							.valueOf(mGameDetail.gameGoodVote));
 				} else if (result.voteType == ReputationVoteParam.TYPE_BAD) {
 					mGameDetail.gameBadVote++;
-					sGameDetailViewHolder.tvReputationBadNum.setText(String
+					mGameDetailViewHolder.tvReputationBadNum.setText(String
 							.valueOf(mGameDetail.gameBadVote));
 				}
 			}
@@ -278,28 +502,28 @@ public class GameDetail extends Activity {
 		if (screenshots.length != 0 && screenshots.length <= 4) {
 			if (screenshots.length == 1) {
 				imageLoader.displayImage(screenshots[0],
-						sGameDetailViewHolder.ivScreenShot1, false);
+						mGameDetailViewHolder.ivScreenShot1, false);
 			} else if (screenshots.length == 2) {
 				imageLoader.displayImage(screenshots[0],
-						sGameDetailViewHolder.ivScreenShot1, false);
+						mGameDetailViewHolder.ivScreenShot1, false);
 				imageLoader.displayImage(screenshots[1],
-						sGameDetailViewHolder.ivScreenShot2, false);
+						mGameDetailViewHolder.ivScreenShot2, false);
 			} else if (screenshots.length == 3) {
 				imageLoader.displayImage(screenshots[0],
-						sGameDetailViewHolder.ivScreenShot1, false);
+						mGameDetailViewHolder.ivScreenShot1, false);
 				imageLoader.displayImage(screenshots[1],
-						sGameDetailViewHolder.ivScreenShot2, false);
+						mGameDetailViewHolder.ivScreenShot2, false);
 				imageLoader.displayImage(screenshots[2],
-						sGameDetailViewHolder.ivScreenShot3, false);
+						mGameDetailViewHolder.ivScreenShot3, false);
 			} else {
 				imageLoader.displayImage(screenshots[0],
-						sGameDetailViewHolder.ivScreenShot1, false);
+						mGameDetailViewHolder.ivScreenShot1, false);
 				imageLoader.displayImage(screenshots[1],
-						sGameDetailViewHolder.ivScreenShot2, false);
+						mGameDetailViewHolder.ivScreenShot2, false);
 				imageLoader.displayImage(screenshots[2],
-						sGameDetailViewHolder.ivScreenShot3, false);
+						mGameDetailViewHolder.ivScreenShot3, false);
 				imageLoader.displayImage(screenshots[3],
-						sGameDetailViewHolder.ivScreenShot4, false);
+						mGameDetailViewHolder.ivScreenShot4, false);
 			}
 		}
 
@@ -323,6 +547,7 @@ public class GameDetail extends Activity {
 		private Button btnReconnect;
 		private ProgressBar pbGameDetail;
 		private RelativeLayout rlGameDetail;
+		private Button btnDownload;
 	}
 
 	static class ReputationVoteParam {
@@ -340,4 +565,56 @@ public class GameDetail extends Activity {
 		private int voteType;
 	}
 
+	
+	private boolean moveToDownload(long downloadId) {
+		for (mDownloadsCursor.moveToFirst(); !mDownloadsCursor.isAfterLast(); mDownloadsCursor
+				.moveToNext()) {
+			if (mDownloadsCursor.getLong(mIdColumnId) == downloadId) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean advPopupJudger()
+	{
+		int downloadedTimes = downloadedTimesSharePreference.getDownloadedTime();
+		boolean donateVote = downloadedTimesSharePreference.getDonateVote();
+		
+		if(downloadedTimes/3==0&& donateVote == true)
+			return true;
+		else
+			return false;
+	}
+	
+	private void showAdDailog()
+	{
+		final Dialog dialog = new Dialog(this);
+		
+		dialog.setContentView(R.layout.ad_dialog);
+		dialog.setTitle(getResources().getString(R.string.ad_favrite_title));
+		
+		LinearLayout llReject = (LinearLayout) dialog.findViewById(R.id.ll_ad_favor_reject);
+		LinearLayout llDonate = (LinearLayout) dialog.findViewById(R.string.ad_favrite_donate);
+		
+		llReject.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+			
+				downloadedTimesSharePreference.setDonateVote(false);
+				dialog.dismiss();
+			}
+		});
+		
+		llDonate.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+			
+				AppFlood.showInterstitial(GameDetail.this);
+			}
+		});
+		
+	}
 }

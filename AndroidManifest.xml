@@ -56,6 +56,7 @@
         <activity
             android:name="com.injoee.ui.GameDetail"
             android:label="@string/title_activity_game_detail"
+            android:exported="true"
             android:parentActivityName="com.injoee.ui.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -72,9 +73,10 @@
              	-->
             </intent-filter>
         </activity>
+        
         <activity android:name="com.mozillaonline.providers.downloads.ui.DownloadList" >
+        
         </activity>
-
         <provider
             android:name="com.injoee.providers.downloads.DownloadProvider"
             android:authorities="com.injoee.downloads" />
@@ -93,10 +95,59 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
+        
+        <activity
+            android:name="com.injoee.providers.downloads.SizeLimitActivity" />
+        
         <activity
             android:name="com.injoee.ui.MainActivity"
             android:label="@string/app_name" >
         </activity>
+        
+        <!-- activity import from AppFlood -->
+        <activity
+            android:name="com.appflood.mraid.MraidBrowserActivity"
+            android:configChanges="keyboardHidden"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" >    
+        </activity>
+        
+        <activity
+            android:name="com.appflood.AFPanelActivity"
+            android:configChanges="keyboardHidden"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" >
+        </activity>
+        <activity
+            android:name="com.appflood.AFFullScreenActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:theme="@android:style/Theme.Translucent"
+            android:launchMode="singleTask">
+        </activity>
+        
+        <activity
+            android:name="com.appflood.AFListActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" >
+            <intent-filter>
+                <action android:name="" />
+                </intent-filter>
+        </activity>
+        <activity
+            android:name="com.appflood.AFInterstitialActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent" >
+        </activity>
+        <receiver
+            android:name="com.appflood.AFReferralReceiver"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
+                </intent-filter>
+         </receiver>
     </application>
 
 </manifest>

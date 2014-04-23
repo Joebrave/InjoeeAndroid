@@ -4,11 +4,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.appflood.AppFlood.*;
+import com.appflood.AFBannerView;
+import com.appflood.AppFlood;
+import com.appflood.AppFlood.AFEventDelegate;
+import com.appflood.AppFlood.AFRequestDelegate;
+
 import org.json.JSONException;
 
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.ContentObserver;
@@ -16,6 +23,7 @@ import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.DialogPreference;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
@@ -107,6 +115,8 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		mBtnReconnectNetwork.setOnClickListener(mNetworkReconnectClickListner);
 		
 		loadList();  // load list from internet or local database 
+		
+		AppFlood.initialize(this, "BoWFT1pq4XMeuLys", "bPGpGAEG32f9L53036dd1", AppFlood.AD_ALL);
 	}
 
 	@Override
@@ -185,7 +195,9 @@ public class MainActivity extends Activity implements LazyListViewListener {
 				mGameListView.setPullLoadEnable(true);
 
 				if (mTotal == mGameList.size()) {// if reach the end of the list disable the footer
-					mGameListView.setPullLoadEnable(false);  
+					mGameListView.setPullLoadEnable(false);
+					
+					AppFlood.showInterstitial(MainActivity.this);  //ad show for more game
 				}
 				
 				mSharePreferences.setGameListTotal(mTotal);

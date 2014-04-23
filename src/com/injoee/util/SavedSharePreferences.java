@@ -12,6 +12,7 @@ public class SavedSharePreferences {
 	public static final String LAST_LOAD_TIME = "last_load_time";
 	public static final String DOWNLOAD_TIMES = "down_load_time";
 	public static final String GAME_LIST_TOTAL = "game_list_total";
+	public static final String DONATE_VOTE = "donate_vote";
 	
 	public static final long DAY_MILLIS = 24 * 60 * 60 * 1000L;
 	
@@ -22,6 +23,14 @@ public class SavedSharePreferences {
 		this.mPrefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
 		if(!this.mPrefs.contains(LAST_LOAD_TIME)) {
 			this.mPrefs.edit().putLong(LAST_LOAD_TIME, System.currentTimeMillis()).commit();
+		}
+		if(!this.mPrefs.contains(DOWNLOAD_TIMES)) //initilize 
+		{
+			this.mPrefs.edit().putInt(DOWNLOAD_TIMES, 0);
+		}
+		if(!this.mPrefs.contains(LAST_LOAD_TIME))
+		{
+			this.mPrefs.edit().putBoolean(DONATE_VOTE, true);
 		}
 	}
 	
@@ -46,6 +55,30 @@ public class SavedSharePreferences {
 		mPrefs.edit().putLong(LAST_LOAD_TIME, currTime).commit();	
 	}
 	
+	public void setDownloadedTime()
+	{
+		int LastDownloadTimes = getDownloadedTime();
+		
+		LastDownloadTimes ++;
+		
+		mPrefs.edit().putInt(LAST_LOAD_TIME, LastDownloadTimes);
+	}
+	
+	public int getDownloadedTime()
+	{
+		return mPrefs.getInt(DOWNLOAD_TIMES, 0);
+	}
+	
+	public void setDonateVote(boolean donateVote)
+	{
+		mPrefs.edit().putBoolean(DONATE_VOTE, donateVote);  //if the donateVote is true then show the adv
+	}
+	
+	public boolean getDonateVote()
+	{
+		return mPrefs.getBoolean(DONATE_VOTE, false);
+	}
+	
 	public boolean needRefresh()   //count if the dif hours between is large than 24, if is true load from the internet
 	{
 		long currTime = System.currentTimeMillis();
@@ -57,4 +90,6 @@ public class SavedSharePreferences {
 			return false;
 		}
 	}
+	
+	
 }
