@@ -45,7 +45,6 @@ public class GameDetail extends Activity {
 	private GameInfoDetail mGameDetail;
 	private GameDetailViewHolder mGameDetailViewHolder;
 	private FetchGameTask mFetchGameTask = new FetchGameTask();
-	private SavedSharePreferences downloadedTimesSharePreference;
 	private static boolean byPackageName;
 	
 	private int mTitleColumnId;
@@ -248,8 +247,8 @@ public class GameDetail extends Activity {
 		case DownloadStatus.GAME_DOWNLOADED:
 			btn.setText(R.string.game_install);
 			
-			downloadedTimesSharePreference.setDownloadedTime();//count for the adv
-			downloadedTimesSharePreference.setDonateVote(true);
+			SavedSharePreferences.getInstance(this).setDownloadedTime();//count for the adv
+			SavedSharePreferences.getInstance(this).setDonateVote(true);
 			
 			if(!GameInstaller.isApkInstalled(this, gameInfoDetail.gamePackageName)) {
 				if(gameInfoDetail.gameCategory.equals("APK")) {
@@ -578,10 +577,10 @@ public class GameDetail extends Activity {
 	
 	private boolean advPopupJudger()
 	{
-		int downloadedTimes = downloadedTimesSharePreference.getDownloadedTime();
-		boolean donateVote = downloadedTimesSharePreference.getDonateVote();
+		int downloadedTimes = SavedSharePreferences.getInstance(this).getDownloadedTime();
+		boolean donateVote = SavedSharePreferences.getInstance(this).getDonateVote();
 		
-		if(downloadedTimes/3==0&& donateVote == true)
+		if(downloadedTimes / 3 == 0 && donateVote == true)
 			return true;
 		else
 			return false;
@@ -602,7 +601,7 @@ public class GameDetail extends Activity {
 			@Override
 			public void onClick(View v) {
 			
-				downloadedTimesSharePreference.setDonateVote(false);
+				SavedSharePreferences.getInstance(GameDetail.this).setDonateVote(false);
 				dialog.dismiss();
 			}
 		});
