@@ -291,6 +291,7 @@ public class LoaderAdapter extends BaseAdapter {
 						}
 						
 						status = cursor.getInt(this.mStatusColumnId);
+						Log.e("Joe", "Status: " + status);
 						String localUri = cursor.getString(this.mLocalUriColumnId);
 						gameInfo.gameStatus.filePath = localUri;
 						Log.e("Joe", "filePath: " + localUri);

@@ -277,6 +277,7 @@ public class MainActivity extends Activity implements LazyListViewListener {
 	protected void onResume() {
 		super.onResume();
 		this.mAdapter.registerObserver(mContentObserver);
+		this.mAdapter.notifyDataSetChanged();
 	}
 
 	@Override

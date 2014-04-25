@@ -77,7 +77,7 @@ public class GameDetailsRequester {
 			String jsonGameDetail = jsonObject.getString("game_detail");
 
 			JSONObject jsonObjectGameDetail = new JSONObject(jsonGameDetail);
-
+			gameDetailItem.gameId = jsonObjectGameDetail.getString("game_id");
 			gameDetailItem.setGameName(jsonObjectGameDetail
 					.getString("game_name"));
 

@@ -46,16 +46,16 @@ public class GameDetail extends Activity {
 	private GameDetailViewHolder mGameDetailViewHolder;
 	private FetchGameTask mFetchGameTask = new FetchGameTask();
 	private static boolean byPackageName;
-	
-	private int mTitleColumnId;
-	private int mStatusColumnId;
-	private int mReasonColumnId;
-	private int mTotalBytesColumnId;
-	private int mCurrentBytesColumnId;
-	private int mMediaTypeColumnId;
-	private int mDateColumnId;
-	private int mIdColumnId;
-	private int mLocalUriColumnId;
+//	
+//	private int mTitleColumnId;
+//	private int mStatusColumnId;
+//	private int mReasonColumnId;
+//	private int mTotalBytesColumnId;
+//	private int mCurrentBytesColumnId;
+//	private int mMediaTypeColumnId;
+//	private int mDateColumnId;
+//	private int mIdColumnId;
+//	private int mLocalUriColumnId;
 	
 	
 	DownloadManager mDownloadManager;
@@ -127,28 +127,28 @@ public class GameDetail extends Activity {
 		startDownloadService(this);
 		
 		mDownloadManager.setAccessAllDownloads(true);
-		DownloadManager.Query baseQuery = new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true);
-		mDownloadsCursor = mDownloadManager.query(baseQuery);
+//		DownloadManager.Query baseQuery = new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true);
+//		mDownloadsCursor = mDownloadManager.query(baseQuery);
 		
-		Cursor cursor = this.mDownloadsCursor;
-		
-		mIdColumnId = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_ID);
-		mTitleColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE);
-		mStatusColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS);
-		mReasonColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON);
-		mTotalBytesColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
-		mCurrentBytesColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
-		mMediaTypeColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE);
-		mDateColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP);
-		mLocalUriColumnId = cursor
-				.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI);
+//		Cursor cursor = this.mDownloadsCursor;
+//		
+//		mIdColumnId = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_ID);
+//		mTitleColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE);
+//		mStatusColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS);
+//		mReasonColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON);
+//		mTotalBytesColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+//		mCurrentBytesColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+//		mMediaTypeColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE);
+//		mDateColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP);
+//		mLocalUriColumnId = cursor
+//				.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI);
 	}
 	
 	@Override
@@ -162,24 +162,27 @@ public class GameDetail extends Activity {
 		int status = DownloadManager.STATUS_FAILED;
 		//Log.e("Joe", "getView_id: " + mGameDetail.gameStatus.id);
 		DownloadManager.Query query = new DownloadManager.Query();
+		Log.e("Joe", "gameId: " + mGameDetail.gameId);
 		if(mGameDetail.gameStatus.id <= 0) {
 			query = query.setFilterByItemId(mGameDetail.gameId);
 		} else {
 			query = query.setFilterById(mGameDetail.gameStatus.id);
 		}
+		Log.e("Joe", "getView_id: " + mGameDetail.gameStatus.id);
 		Cursor cursorExecution = mDownloadManager.query(query);
 		if(cursorExecution != null) {
 			if(cursorExecution.getCount() != 0) {
 				cursorExecution.moveToFirst();
-				mGameDetail.gameStatus.id = cursorExecution.getLong(this.mIdColumnId);
-				long totalBytes = cursorExecution.getLong(this.mTotalBytesColumnId);
-				long currentBytes = cursorExecution.getLong(this.mCurrentBytesColumnId);
+				mGameDetail.gameStatus.id = cursorExecution.getLong(cursorExecution.getColumnIndex(DownloadManager.COLUMN_ID));
+				long totalBytes = cursorExecution.getLong(cursorExecution.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+				long currentBytes = cursorExecution.getLong(cursorExecution.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+
+				Log.e("Joe", "gameStatus.id: " + DownloadManager.COLUMN_ID + ", id: " + mGameDetail.gameStatus.id);
+				Log.e("Joe", "toalBytesColId: " + DownloadManager.COLUMN_TOTAL_SIZE_BYTES + ", bytes: " + totalBytes);
+				Log.e("Joe", "curBytesColId: " + DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR + ", bytes: " + currentBytes);
 				
-				Log.e("Joe", "toalBytesColId: " + this.mTotalBytesColumnId + ", bytes: " + totalBytes);
-				Log.e("Joe", "curBytesColId: " + this.mCurrentBytesColumnId + ", bytes: " + currentBytes);
-				
-				status = cursorExecution.getInt(this.mStatusColumnId);
-				String localUri = cursorExecution.getString(this.mLocalUriColumnId);
+				status = cursorExecution.getInt(cursorExecution.getColumnIndex(DownloadManager.COLUMN_STATUS));
+				String localUri = cursorExecution.getString(cursorExecution.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
 				mGameDetail.gameStatus.filePath = localUri;
 				Log.e("Joe", "filePath: " + localUri);
 			}
@@ -235,7 +238,7 @@ public class GameDetail extends Activity {
 			
 			Log.e("Joe", "performClicked_id: " + gameInfoDetail.gameStatus.id);
 			gameInfoDetail.gameStatus.id = startDownload(gameInfoDetail.gameDownLoadURL, gameInfoDetail.gameId);
-			refresh();
+//			refresh();
 			break;
 			
 		case DownloadStatus.GAME_DOWNLOADING:
@@ -266,7 +269,8 @@ public class GameDetail extends Activity {
 			}
 			break;
 		}
-
+		updateDownloadStatus();
+		finish();
 	}
 	
 	
@@ -288,30 +292,29 @@ public class GameDetail extends Activity {
 		context.startService(intent);
 	}
 
-	private ContentObserver mObserver;
-	public void unregisterObserver(ContentObserver observer) {
-		this.mDownloadsCursor.unregisterContentObserver(observer);
-	}
-	
-	public void registerObserver(ContentObserver observer) {
-		mObserver = observer;
-		this.mDownloadsCursor.registerContentObserver(observer);
-	}
-	
-	public void refresh() {
-		unregisterObserver(mObserver);
-		
-		this.mDownloadsCursor.close();
-		this.mDownloadsCursor = mDownloadManager.query(new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true));
-		
-		registerObserver(mObserver);
-	}
+//	private ContentObserver mObserver;
+//	public void unregisterObserver(ContentObserver observer) {
+//		this.mDownloadsCursor.unregisterContentObserver(observer);
+//	}
+//	
+//	public void registerObserver(ContentObserver observer) {
+//		mObserver = observer;
+//		this.mDownloadsCursor.registerContentObserver(observer);
+//	}
+//	
+//	public void refresh() {
+//		unregisterObserver(mObserver);
+//		
+//		this.mDownloadsCursor.close();
+//		this.mDownloadsCursor = mDownloadManager.query(new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true));
+//		
+//		registerObserver(mObserver);
+//	}
 
 	OnClickListener reputationVoterClickListener = new OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
-			// TODO Auto-generated method stub
 			if (mGameDetail == null) {
 				if (v.getId() == R.id.btn_reconnect_internet_game_detail) {
 					Button btnReconnect = (Button) v;
@@ -353,7 +356,6 @@ public class GameDetail extends Activity {
 
 		@Override
 		protected void onPreExecute() {
-			// TODO Auto-generated method stub
 			super.onPreExecute();
 
 			mGameDetailViewHolder.rlGameDetail.setVisibility(View.INVISIBLE);
@@ -365,7 +367,6 @@ public class GameDetail extends Activity {
 
 		@Override
 		protected GameInfoDetail doInBackground(String... params) {
-			// TODO Auto-generated method stub
 			GameDetailsRequester gameInfoDetail = new GameDetailsRequester(byPackageName);
 			GameInfoDetail gameDetail = new GameInfoDetail();
 			try {
@@ -445,7 +446,6 @@ public class GameDetail extends Activity {
 					reputationResult.voteType = ReputationVoteParam.TYPE_GOOD;
 					return reputationResult;
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 
 				}
@@ -459,7 +459,6 @@ public class GameDetail extends Activity {
 
 					return reputationResult;
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
@@ -564,17 +563,6 @@ public class GameDetail extends Activity {
 		private int voteType;
 	}
 
-	
-	private boolean moveToDownload(long downloadId) {
-		for (mDownloadsCursor.moveToFirst(); !mDownloadsCursor.isAfterLast(); mDownloadsCursor
-				.moveToNext()) {
-			if (mDownloadsCursor.getLong(mIdColumnId) == downloadId) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	private boolean advPopupJudger()
 	{
 		int downloadedTimes = SavedSharePreferences.getInstance(this).getDownloadedTime();
