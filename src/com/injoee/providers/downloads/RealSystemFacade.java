@@ -13,10 +13,10 @@ import android.util.Log;
 class RealSystemFacade implements SystemFacade {
 	private Context mContext;
 	private NotificationManager mNotificationManager;
-	// 2 GB
-	private static final long DOWNLOAD_MAX_BYTES_OVER_MOBILE = 2 * 1024 * 1024 * 1024;
-	// 1 GB
-	private static final long DOWNLOAD_RECOMMENDED_MAX_BYTES_OVER_MOBILE = 1024 * 1024 * 1024;
+	// 50MB
+	private static final long DOWNLOAD_MAX_BYTES_OVER_MOBILE = 50 * 1024 * 1024L;
+	// 25MB
+	private static final long DOWNLOAD_RECOMMENDED_MAX_BYTES_OVER_MOBILE = 25 * 1024 * 1024L;
 
 	public RealSystemFacade(Context context) {
 		mContext = context;
