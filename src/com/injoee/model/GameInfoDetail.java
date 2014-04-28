@@ -3,7 +3,7 @@ package com.injoee.model;
 public class GameInfoDetail extends GameInfo {
 
 	public String gameDescription;
-	public String[] gameScreenShots;
+	public String[] gameScreenShots = {"","","","",""};
 	public int gameGoodVote;
 	public int gameBadVote;
 	

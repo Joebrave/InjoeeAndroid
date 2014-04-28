@@ -27,6 +27,7 @@ import android.preference.DialogPreference;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -35,27 +36,36 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.injoee.R;
+import com.injoee.imageloader.ImageLoader;
 import com.injoee.model.GameInfo;
 import com.injoee.ui.widget.LazyListView;
 import com.injoee.ui.widget.LazyListView.LazyListViewListener;
 import com.injoee.util.FeaturedGamesListProvider;
+import com.injoee.util.GameDetailProvider;
 import com.injoee.util.SavedSharePreferences;
+import com.injoee.util.Utility;
 import com.injoee.webservice.GameListRequester;
+import com.umeng.analytics.MobclickAgent;
+import com.umeng.fb.FeedbackAgent;
+import com.umeng.message.PushAgent;
+import com.umeng.update.UmengUpdateAgent;
 
 public class MainActivity extends Activity implements LazyListViewListener {
 	// Constant of the parameter
 	private final static int LOAD = 0;
 	private final static int REFRESH = 1;
 	private final static int LOAD_MORE = 2;
-	private final static int EACH_TIME_NUM = 2; // each time pull from the server;
+	private final static int EACH_TIME_NUM = 10; // each time pull from the server;
 	
 	protected LazyListView mGameListView;
 	protected LinearLayout mNetworkProblem;
 	protected Button mBtnReconnectNetwork;
 	private ActionBar mActionBar;
 	private ProgressBar mProgressBar;
+	private Utility mSaveOrLoadImageUtility;
 
 	private SavedSharePreferences mSharePreferences;
 	
@@ -72,7 +82,6 @@ public class MainActivity extends Activity implements LazyListViewListener {
 	 * Called when there's a change to the downloads database.
 	 */
 	void handleDownloadsChanged() {
-		Log.e("Joe", "+++++++downloads changed");
 		this.mAdapter.notifyDataSetChanged();
 	}
 	
@@ -116,6 +125,14 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		
 		loadList();  // load list from internet or local database 
 		
+		//Umeng functionality added;
+		UmengUpdateAgent.silentUpdate(this);
+		PushAgent mPushAgent = PushAgent.getInstance(this);
+		mPushAgent.enable();
+		PushAgent.getInstance(this).onAppStart();
+		
+		mSaveOrLoadImageUtility = new Utility();
+		
 		AppFlood.initialize(this, "BoWFT1pq4XMeuLys", "bPGpGAEG32f9L53036dd1", AppFlood.AD_ALL);
 	}
 
@@ -127,6 +144,22 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		// menu.add(Menu.NONE, 1, 1,
 		// getResources().getText(R.string.menu_feedback));
 
+		return true;
+	}
+	// menu items on the actionbar selected 
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		
+		super.onOptionsItemSelected(item);
+		
+		switch(item.getItemId())
+		{
+		case R.id.action_feedback:  // feedback to Injoee
+			FeedbackAgent agent = new FeedbackAgent(this);
+			agent.startFeedbackActivity();
+			break;
+		}
+		
 		return true;
 	}
 
@@ -278,12 +311,14 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		super.onResume();
 		this.mAdapter.registerObserver(mContentObserver);
 		this.mAdapter.notifyDataSetChanged();
+		MobclickAgent.onResume(this);
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 		this.mAdapter.unregisterObserver(mContentObserver);
+		MobclickAgent.onPause(this);
 	}
 	
 	public void loadList()
@@ -293,13 +328,16 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		} else{
 			boolean loaded = loadLocalData();
 			
-			if(!loaded) {//check if there's data in the sharepreference if not load from internet
+			if(!loaded) {//check if there's data in the contentprovider if not load from internet
 				fetchGames(LOAD);
 			}
 		}
 	}
 
 	void insertToLocalData(List<GameInfo> gameList){
+		String icon;
+		ImageLoader imageHelper = new ImageLoader(this);
+		
 		for(GameInfo gameInfo : gameList) {
 			ContentValues values = new ContentValues();
 			//add the value to the contentprovider  by qian
@@ -310,7 +348,9 @@ public class MainActivity extends Activity implements LazyListViewListener {
 			values.put(FeaturedGamesListProvider.PACKAGENAME, gameInfo.getGamePackageName());
 			values.put(FeaturedGamesListProvider.PACKAGESIZE, gameInfo.getGamePackageSize());
 			values.put(FeaturedGamesListProvider.TYPE, gameInfo.getGameType()); //there's problem with bitmap store method...
-			values.put(FeaturedGamesListProvider.ICON, gameInfo.getGameIcon());
+			String iconTemp = gameInfo.getGameIcon();
+			icon = mSaveOrLoadImageUtility.storeImage(imageHelper.getBitmap(iconTemp), iconTemp, gameInfo.getGameId());
+			values.put(FeaturedGamesListProvider.ICON, icon);
 			getContentResolver().insert(FeaturedGamesListProvider.CONTENT_URI, values);
 		}
 	}
@@ -354,4 +394,5 @@ public class MainActivity extends Activity implements LazyListViewListener {
 	{
 		getContentResolver().delete(FeaturedGamesListProvider.CONTENT_URI, null, null);
 	}
+	
 }

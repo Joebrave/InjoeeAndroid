@@ -1,6 +1,9 @@
 package com.injoee.ui;
 
 import com.injoee.R;
+import com.umeng.analytics.MobclickAgent;
+import com.umeng.fb.FeedbackAgent;
+import com.umeng.message.PushAgent;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -17,11 +20,19 @@ public class StartPageActivity extends Activity {
 		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.start_page);
+		//for user feedback
+		FeedbackAgent agent = new FeedbackAgent(this);
+		agent.sync();
+		
 		int showTime = 3000;
 		if(sBooted) {
 			showTime = 0;
 		}
 		new Handler().postDelayed(new startThread(), showTime);
+		
+		//umeng functionality
+		MobclickAgent.updateOnlineConfig(this);
+		PushAgent.getInstance(this).onAppStart();
 	}
 	
 	public class startThread implements Runnable
@@ -36,6 +47,18 @@ public class StartPageActivity extends Activity {
 			sBooted = true;
 		}
 		
+	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		MobclickAgent.onResume(this);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		MobclickAgent.onPause(this);
 	}
 
 }

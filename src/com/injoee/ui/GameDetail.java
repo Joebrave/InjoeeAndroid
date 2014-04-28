@@ -8,15 +8,21 @@ import com.appflood.AppFlood;
 import com.injoee.R;
 import com.injoee.func.GameInstaller;
 import com.injoee.imageloader.ImageLoader;
+import com.injoee.model.GameInfo;
 import com.injoee.model.GameInfoDetail;
 import com.injoee.model.GameInfoDetail.DownloadStatus;
 import com.injoee.providers.DownloadManager;
 import com.injoee.providers.DownloadManager.Request;
 import com.injoee.providers.downloads.DownloadService;
+import com.injoee.util.GameDetailProvider;
 import com.injoee.util.SavedSharePreferences;
+import com.injoee.util.Utility;
 import com.injoee.webservice.GameDetailsRequester;
 import com.injoee.webservice.Voter;
+import com.umeng.analytics.MobclickAgent;
+import com.umeng.message.PushAgent;
 
+import android.net.NetworkInfo.DetailedState;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -25,10 +31,12 @@ import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -46,6 +54,7 @@ public class GameDetail extends Activity {
 	private GameDetailViewHolder mGameDetailViewHolder;
 	private FetchGameTask mFetchGameTask = new FetchGameTask();
 	private static boolean byPackageName;
+	private Utility mImageSaveorReadUtiltiy;
 //	
 //	private int mTitleColumnId;
 //	private int mStatusColumnId;
@@ -96,6 +105,7 @@ public class GameDetail extends Activity {
 		mGameDetailViewHolder.btnDownload = (Button) findViewById(R.id.btn_gamedetail_download);
 
 		String param = "";
+		mImageSaveorReadUtiltiy = new Utility();
 		
 		if(gameID == null && gamePackageName != null)   //by packagename searching request the result;
 		{
@@ -107,7 +117,18 @@ public class GameDetail extends Activity {
 			param = gameID;
 			byPackageName = false;
 		}
-		mFetchGameTask.execute(param);
+		
+		if(!byPackageName)
+		{
+			boolean searchedResult = loadLocalGameDetail(param);
+			if(searchedResult)
+				loadDataToTheWidget(mGameDetail, false);
+			else
+				mFetchGameTask.execute(param);
+		}
+		else
+			mFetchGameTask.execute(param);
+		
 		mGameDetailViewHolder.btnReconnect.setTag(gameID);
 		// String featured_Game_Name = intent.getStringExtra("game_title");
 
@@ -149,11 +170,20 @@ public class GameDetail extends Activity {
 //				.getColumnIndexOrThrow(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP);
 //		mLocalUriColumnId = cursor
 //				.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI);
+		
+		PushAgent.getInstance(this).onAppStart();
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
+		MobclickAgent.onResume(this);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		MobclickAgent.onPause(this);
 	}
 
 	private void updateDownloadStatus() {
@@ -378,6 +408,11 @@ public class GameDetail extends Activity {
 				// TODO:
 				return null;
 			}
+			
+			if(gameDetail!=null)
+			{
+				insertGameDetail(gameDetail); //contentprovider data insert
+			}
 
 			return gameDetail;
 		}
@@ -395,28 +430,7 @@ public class GameDetail extends Activity {
 						.setVisibility(View.VISIBLE);
 			} else {
 
-				ImageLoader imageLoader = new ImageLoader(
-						getApplicationContext());
-
-				imageLoader.displayImage(gameInfoDetail.getGameIcon(),
-						mGameDetailViewHolder.ivGameIcon, false);
-
-				loadscreenShots(gameInfoDetail.gameScreenShots, imageLoader);
-
-				mGameDetailViewHolder.tvDescription
-						.setText(gameInfoDetail.gameDescription);
-
-				mGameDetailViewHolder.tvGamePackageSize
-						.setText(gameInfoDetail.gamePackageSize);
-
-				mGameDetailViewHolder.tvGameType
-						.setText(gameInfoDetail.gameType);
-
-				mGameDetailViewHolder.tvReputationBadNum.setText(String
-						.valueOf(gameInfoDetail.gameBadVote));
-
-				mGameDetailViewHolder.tvReputationGoodNum.setText(String
-						.valueOf(gameInfoDetail.gameGoodVote));
+				loadDataToTheWidget(gameInfoDetail, true);
 
 				mGameDetailViewHolder.rlGameDetail.setVisibility(View.VISIBLE);
 
@@ -604,4 +618,145 @@ public class GameDetail extends Activity {
 		});
 		
 	}
+	
+	private void insertGameDetail(GameInfoDetail gameDetail)
+	{
+		String screenShots [] = {"","","",""};
+		String icon ;
+		ContentValues values = new ContentValues();
+		ImageLoader imageHelper = new ImageLoader(getApplicationContext());
+		String gameID = gameDetail.getGameId();
+		
+		values.put(GameDetailProvider.CATEGORY, gameDetail.getGameCategory());
+		values.put(GameDetailProvider.ID, gameID);
+		values.put(GameDetailProvider.DOWNLOADURL, gameDetail.getGameDownLoadURL());
+		values.put(GameDetailProvider.NAME, gameDetail.getGameName());
+		values.put(GameDetailProvider.PACKAGENAME, gameDetail.getGamePackageName());
+		values.put(GameDetailProvider.PACKAGESIZE, gameDetail.getGamePackageSize());
+		values.put(GameDetailProvider.TYPE, gameDetail.getGameType()); //there's problem with bitmap store method...
+		//save icon local path to the sdcard;
+		String iconTemp = gameDetail.getGameIcon();
+		icon = mImageSaveorReadUtiltiy.storeImage(imageHelper.getBitmap(iconTemp), iconTemp, gameID);
+		values.put(GameDetailProvider.ICON, icon);
+		//save image local path to the sdcard;
+		String screenURLTemp [] = gameDetail.getGameScreenShots();
+		screenShots[0]= mImageSaveorReadUtiltiy.storeImage(imageHelper.getBitmap(screenURLTemp[0]), screenURLTemp[0], gameID);
+		screenShots[1]= mImageSaveorReadUtiltiy.storeImage(imageHelper.getBitmap(screenURLTemp[1]), screenURLTemp[1], gameID);
+		screenShots[2]= mImageSaveorReadUtiltiy.storeImage(imageHelper.getBitmap(screenURLTemp[2]), screenURLTemp[2], gameID);
+		screenShots[3]= mImageSaveorReadUtiltiy.storeImage(imageHelper.getBitmap(screenURLTemp[3]), screenURLTemp[3], gameID);
+		values.put(GameDetailProvider.GAMESCREENSHOTS1, screenShots[0]);
+		values.put(GameDetailProvider.GAMESCREENSHOTS2, screenShots[1]);
+		values.put(GameDetailProvider.GAMESCREENSHOTS3, screenShots[2]);
+		values.put(GameDetailProvider.GAMESCREENSHOTS4, screenShots[3]);
+		
+		values.put(GameDetailProvider.GAMEGOODVOTE, gameDetail.gameGoodVote);
+		values.put(GameDetailProvider.GAMEBADVOTE, gameDetail.gameBadVote);
+		values.put(GameDetailProvider.GAMEDESCRIPTION, gameDetail.gameDescription);
+		
+		getContentResolver().insert(GameDetailProvider.CONTENT_URI, values);
+	}
+	
+	private boolean loadLocalGameDetail(String gameID)
+	{
+		
+		String requestURL = GameDetailProvider.CONTENT_URI + "/" + gameID;
+		Uri gameURI = Uri.parse(requestURL);
+		Cursor c;
+		
+		try{
+		
+			c = getContentResolver().query(gameURI, null, null, null, null);
+		}
+		catch(SQLException content)
+		{
+			content.printStackTrace();
+			return false;
+		}
+		
+		boolean returnOneResult = c.isFirst()&&c.isLast();
+		
+		if( c == null && !returnOneResult)  //check if the return is right
+			return false; 
+		
+		if(!c.moveToFirst()) {
+			c.close();
+			return false;
+		}
+		else {
+			
+				GameInfoDetail gameInfoDetail = new GameInfoDetail();
+				gameInfoDetail.gameIcon = c.getString(c.getColumnIndex(GameDetailProvider.ICON));
+				gameInfoDetail.gameName = c.getString(c.getColumnIndex(GameDetailProvider.NAME));
+				gameInfoDetail.gameCategory = c.getString(c.getColumnIndex(GameDetailProvider.CATEGORY));
+				gameInfoDetail.gamePackageName = c.getString(c.getColumnIndex(GameDetailProvider.PACKAGENAME));
+				gameInfoDetail.gamePackageSize = c.getString(c.getColumnIndex(GameDetailProvider.PACKAGESIZE));
+				gameInfoDetail.gameType = c.getString(c.getColumnIndex(GameDetailProvider.TYPE));
+				gameInfoDetail.gameDownLoadURL = c.getString(c.getColumnIndex(GameDetailProvider.DOWNLOADURL));
+				gameInfoDetail.gameId = c.getString(c.getColumnIndex(GameDetailProvider.ID));			
+				gameInfoDetail.gameScreenShots[0] = c.getString(c.getColumnIndex(GameDetailProvider.GAMESCREENSHOTS1));
+				
+				Log.e("wu qian icon load path is", gameInfoDetail.gameScreenShots[0]);
+				
+				gameInfoDetail.gameScreenShots[1] = c.getString(c.getColumnIndex(GameDetailProvider.GAMESCREENSHOTS2));
+				gameInfoDetail.gameScreenShots[2] = c.getString(c.getColumnIndex(GameDetailProvider.GAMESCREENSHOTS3));
+				gameInfoDetail.gameScreenShots[3] = c.getString(c.getColumnIndex(GameDetailProvider.GAMESCREENSHOTS4));
+				gameInfoDetail.gameDescription = c.getString(c.getColumnIndex(GameDetailProvider.GAMEDESCRIPTION));
+				gameInfoDetail.gameBadVote = c.getInt(c.getColumnIndex(GameDetailProvider.GAMEBADVOTE));
+				gameInfoDetail.gameGoodVote = c.getInt(c.getColumnIndex(GameDetailProvider.GAMEGOODVOTE));
+			
+			c.close();
+		
+			mGameDetail = gameInfoDetail;
+			
+			return true;
+		}	
+	}
+	
+	private void loadDataToTheWidget(GameInfoDetail gameInfoDetail, boolean dataFromInternet)
+	{
+		ImageLoader imageLoader = new ImageLoader(
+				getApplicationContext());
+
+		if(dataFromInternet)
+		{
+			imageLoader.displayImage(gameInfoDetail.getGameIcon(),
+				mGameDetailViewHolder.ivGameIcon, false);
+		
+			loadscreenShots(gameInfoDetail.gameScreenShots, imageLoader);
+		}
+		else
+		{
+			mGameDetailViewHolder.ivGameIcon.
+			setImageBitmap(mImageSaveorReadUtiltiy.returnBitmapFromSDCard(gameInfoDetail.gameIcon));
+			
+			mGameDetailViewHolder.ivScreenShot1.
+			setImageBitmap(mImageSaveorReadUtiltiy.returnBitmapFromSDCard(gameInfoDetail.gameScreenShots[0]));
+			
+			mGameDetailViewHolder.ivScreenShot2.
+			setImageBitmap(mImageSaveorReadUtiltiy.returnBitmapFromSDCard(gameInfoDetail.gameScreenShots[1]));
+			
+			mGameDetailViewHolder.ivScreenShot3.
+			setImageBitmap(mImageSaveorReadUtiltiy.returnBitmapFromSDCard(gameInfoDetail.gameScreenShots[2]));
+			
+			mGameDetailViewHolder.ivScreenShot4.
+			setImageBitmap(mImageSaveorReadUtiltiy.returnBitmapFromSDCard(gameInfoDetail.gameScreenShots[3]));
+		}
+		
+		mGameDetailViewHolder.tvDescription
+				.setText(gameInfoDetail.gameDescription);
+
+		mGameDetailViewHolder.tvGamePackageSize
+				.setText(gameInfoDetail.gamePackageSize);
+
+		mGameDetailViewHolder.tvGameType
+				.setText(gameInfoDetail.gameType);
+
+		mGameDetailViewHolder.tvReputationBadNum.setText(String
+				.valueOf(gameInfoDetail.gameBadVote));
+
+		mGameDetailViewHolder.tvReputationGoodNum.setText(String
+				.valueOf(gameInfoDetail.gameGoodVote));
+	}
+	
+
 }

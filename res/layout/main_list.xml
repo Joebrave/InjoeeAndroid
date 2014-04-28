@@ -22,7 +22,8 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:divider="@color/list_gray_background"
-        android:dividerHeight="7dp" >
+        android:dividerHeight="7dp"
+         >
     </com.injoee.ui.widget.LazyListView>
 
     <LinearLayout

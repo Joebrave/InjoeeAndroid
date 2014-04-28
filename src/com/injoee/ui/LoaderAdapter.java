@@ -35,6 +35,7 @@ import com.injoee.providers.DownloadManager.Request;
 import com.injoee.providers.downloads.DownloadService;
 import com.injoee.util.FeaturedGamesListProvider;
 import com.injoee.util.SavedSharePreferences;
+import com.injoee.util.Utility;
 
 public class LoaderAdapter extends BaseAdapter {
 
@@ -43,6 +44,8 @@ public class LoaderAdapter extends BaseAdapter {
 	private List<GameInfo> mLocalGames;
 	private ImageLoader mImageLoader;
 	private SavedSharePreferences downloadedTimesSharePreference;
+	private Utility mImageSaveorReadUtiltiy;
+	
 	final private int mTitleColumnId;
 	final private int mStatusColumnId;
 	final private int mReasonColumnId;
@@ -172,17 +175,23 @@ public class LoaderAdapter extends BaseAdapter {
 		Log.i("Joe", "View: " + position + ", convertView: " + convertView);
 
 		if (position == 0) {
-			TextView tvLocalGameTitle = new TextView(mContext);
+			/*TextView tvLocalGameTitle = new TextView(mContext);
 			tvLocalGameTitle.setText("My Games");
-
+			tvLocalGameTitle.setVisibility(View.GONE);
 			return tvLocalGameTitle;
+			*/
+			View view = new View(mContext); 
+			return view; 
 		}
 
 		if (position == localSize + 1) {
-			TextView tvLocalGameTitle = new TextView(mContext);
+			/*TextView tvLocalGameTitle = new TextView(mContext);
 			tvLocalGameTitle.setText("Featured Games");
-
+			tvLocalGameTitle.setVisibility(View.GONE);
 			return tvLocalGameTitle;
+			*/
+			View view = new View(mContext);
+			return view; 
 		}
 
 		if (convertView == null) {
@@ -259,8 +268,16 @@ public class LoaderAdapter extends BaseAdapter {
 				viewHolder.tv_FeaturedGameType.setText(gameInfo.getGameType());
 				viewHolder.tv_FeaturedGameSize.setText(gameInfo.getGamePackageSize());
 				viewHolder.tv_FeaturedGameID.setText(gameInfo.getGameId());
-				mImageLoader.displayImage(gameInfo.getGameIcon(), viewHolder.iv_FeaturedGameIcon, false);
 				
+				if(iconLoadingFromInternet(gameInfo.getGameIcon()))
+				{
+					mImageLoader.displayImage(gameInfo.getGameIcon(), viewHolder.iv_FeaturedGameIcon, false);
+				}
+				else
+				{
+					viewHolder.iv_FeaturedGameIcon.
+					setImageBitmap(mImageSaveorReadUtiltiy.returnBitmapFromSDCard(gameInfo.getGameIcon()));
+				}
 				int status = DownloadManager.STATUS_FAILED;
 				Log.e("Joe", "getView_id: " + gameInfo.gameStatus.id);
 				DownloadManager.Query query = new DownloadManager.Query();
@@ -543,5 +560,12 @@ public class LoaderAdapter extends BaseAdapter {
 			}
 		});
 		
+	}
+	
+	private boolean iconLoadingFromInternet(String picSource)
+	{
+		boolean result = picSource.contains(":"); //contain this string is the sign from internet
+		
+		return result;
 	}
 }

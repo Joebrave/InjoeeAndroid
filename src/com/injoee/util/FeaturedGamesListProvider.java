@@ -51,7 +51,7 @@ public class FeaturedGamesListProvider extends ContentProvider {
 	private SQLiteDatabase database;
 	static final String DATABASE_NAME =  "injoee.db";
 	static final String TABLE_NAME = "featuredGames";
-	static final int DATABASE_VERSION = 2;
+	static final int DATABASE_VERSION = 4;
 	
 	// problem with the blob import 
 	static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(id INTEGER PRIMARY KEY UNIQUE, " + 

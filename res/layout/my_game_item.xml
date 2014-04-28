@@ -11,7 +11,7 @@
         android:id="@+id/iv_my_games_icon"
         android:layout_width="53dip"
         android:layout_height="53dip"
-        android:background="@drawable/icon" >
+        android:background="@drawable/list_default_icon" >
     </ImageView>
 
     <LinearLayout

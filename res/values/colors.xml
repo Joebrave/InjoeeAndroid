@@ -14,5 +14,6 @@
     <color name="dark_slate_gray">#2F4F4F</color>
     <color name="gray_2">#AFAFAF</color>
     <color name="gray_1">#C0C0C0</color>
+    <color name="feedback_edittext_background">#b61213</color>
 
 </resources>
