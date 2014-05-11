@@ -107,6 +107,13 @@ public class GameDetail extends Activity {
 		String param = "";
 		mImageSaveorReadUtiltiy = new Utility();
 		
+		//downloadmanager
+		mDownloadManager = new DownloadManager(getContentResolver(), getPackageName());
+		
+		startDownloadService(this);
+		
+		mDownloadManager.setAccessAllDownloads(true);
+		
 		if(gameID == null && gamePackageName != null)   //by packagename searching request the result;
 		{
 			param = gamePackageName;
@@ -121,10 +128,12 @@ public class GameDetail extends Activity {
 		if(!byPackageName)
 		{
 			boolean searchedResult = loadLocalGameDetail(param);
-			if(searchedResult)
+			if(searchedResult) {
 				loadDataToTheWidget(mGameDetail, false);
-			else
+				updateDownloadStatus();
+			} else {
 				mFetchGameTask.execute(param);
+			}
 		}
 		else
 			mFetchGameTask.execute(param);
@@ -142,12 +151,7 @@ public class GameDetail extends Activity {
 		mGameDetailViewHolder.btnReconnect
 				.setOnClickListener(reputationVoterClickListener);
 		
-		//downloadmanager
-		mDownloadManager = new DownloadManager(getContentResolver(), getPackageName());
-		
-		startDownloadService(this);
-		
-		mDownloadManager.setAccessAllDownloads(true);
+
 //		DownloadManager.Query baseQuery = new DownloadManager.Query().setOnlyIncludeVisibleInDownloadsUi(true);
 //		mDownloadsCursor = mDownloadManager.query(baseQuery);
 		
