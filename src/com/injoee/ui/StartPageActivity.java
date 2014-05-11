@@ -1,6 +1,7 @@
 package com.injoee.ui;
 
 import com.injoee.R;
+import com.injoee.util.SavedSharePreferences;
 import com.umeng.analytics.MobclickAgent;
 import com.umeng.fb.FeedbackAgent;
 import com.umeng.message.PushAgent;
@@ -15,11 +16,14 @@ public class StartPageActivity extends Activity {
 	
 	private ActionBar mActionBar;
 	private static boolean sBooted = false;
+	private SavedSharePreferences mFirstTimeLauncherMark;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.start_page);
+		mFirstTimeLauncherMark = SavedSharePreferences.getInstance(this);
+		
 		//for user feedback
 		FeedbackAgent agent = new FeedbackAgent(this);
 		agent.sync();

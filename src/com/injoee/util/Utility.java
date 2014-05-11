@@ -7,6 +7,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
@@ -75,5 +79,28 @@ public class Utility {
 
 		return bm;
 	}
+	/*
+	public boolean isFeaturedGameTableExists(Context context)
+	{
+		SQLiteDatabase db ;
+		
+		try{
+			db = ;
+			
+		}catch(SQLiteException e)
+		{
+			
+		}
+		
+	    Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM "+DATABASE_NAME+" WHERE type = ? AND name = ?", new String[] {"table", TABLE_NAME});
+	    if (!cursor.moveToFirst())
+	    {
+	        return false;
+	    }
+	    int count = cursor.getInt(0);
+	    cursor.close();
+	    return count > 0;
+	}
+	*/
 
 }

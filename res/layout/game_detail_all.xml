@@ -286,7 +286,7 @@
                     android:paddingRight="5dp"
                     android:paddingTop="10dp"
                     android:text=""
-                    android:textColor="@color/black" />
+                    android:textColor="@color/gray" />
             </LinearLayout>
         </ScrollView>
         <RelativeLayout

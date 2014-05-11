@@ -13,6 +13,7 @@ public class SavedSharePreferences {
 	public static final String DOWNLOAD_TIMES = "down_load_time";
 	public static final String GAME_LIST_TOTAL = "game_list_total";
 	public static final String DONATE_VOTE = "donate_vote";
+	public static final String FIRST_TIME_LAUNCH_MARK = "first_time_launch_mark";
 	
 	public static final long DAY_MILLIS = 24 * 60 * 60 * 1000L;
 	
@@ -91,5 +92,13 @@ public class SavedSharePreferences {
 		}
 	}
 	
+	public boolean getFirstTimeLaunchMark()
+	{
+		return mPrefs.getBoolean(FIRST_TIME_LAUNCH_MARK, true);
+	}
 	
+	public void setFirstTimeLaunchMarkFalse()
+	{
+		mPrefs.edit().putBoolean(FIRST_TIME_LAUNCH_MARK, false);
+	}
 }

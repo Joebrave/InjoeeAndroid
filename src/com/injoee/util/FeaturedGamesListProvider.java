@@ -10,6 +10,7 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
@@ -50,12 +51,12 @@ public class FeaturedGamesListProvider extends ContentProvider {
 	
 	private SQLiteDatabase database;
 	static final String DATABASE_NAME =  "injoee.db";
-	static final String TABLE_NAME = "featuredGames";
+	static final String TABLE_NAME = "FeaturedGames";
 	static final int DATABASE_VERSION = 4;
 	
 	// problem with the blob import 
 	static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(id INTEGER PRIMARY KEY UNIQUE, " + 
-	"name TEXT not null, icon TEXT, type TEXT not null, "
+	"name TEXT not null, icon TEXT not null, type TEXT not null, "
 	+ "category TEXT not null, packagename TEXT not null, packagesize TEXT not null, downloadurl TEXT not null)";
 
 	
@@ -91,6 +92,7 @@ public class FeaturedGamesListProvider extends ContentProvider {
 		switch(uriMatcher.match(uri))
 		{
 		case GAMES:
+			database.execSQL(CREATE_TABLE);
 			count = database.delete(TABLE_NAME, selection, selectionArgs);
 			break;
 		case GAMES_ID:
@@ -121,7 +123,10 @@ public class FeaturedGamesListProvider extends ContentProvider {
 	}
 
 	@Override
-	public Uri insert(Uri uri, ContentValues values) {
+	public Uri insert(Uri uri, ContentValues values) {	
+		
+		database.execSQL(CREATE_TABLE);
+		
 		long row = database.insert(TABLE_NAME, "", values);
 		
 		if(row > 0)
@@ -194,5 +199,5 @@ public class FeaturedGamesListProvider extends ContentProvider {
 		          return count;
 		          
 	}
-
+	
 }

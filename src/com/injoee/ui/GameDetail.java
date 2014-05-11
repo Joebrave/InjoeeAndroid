@@ -409,7 +409,7 @@ public class GameDetail extends Activity {
 				return null;
 			}
 			
-			if(gameDetail!=null)
+			if(gameDetail!=null&&!byPackageName)
 			{
 				insertGameDetail(gameDetail); //contentprovider data insert
 			}
@@ -695,6 +695,7 @@ public class GameDetail extends Activity {
 				gameInfoDetail.gameId = c.getString(c.getColumnIndex(GameDetailProvider.ID));			
 				gameInfoDetail.gameScreenShots[0] = c.getString(c.getColumnIndex(GameDetailProvider.GAMESCREENSHOTS1));
 				
+				
 				Log.e("wu qian icon load path is", gameInfoDetail.gameScreenShots[0]);
 				
 				gameInfoDetail.gameScreenShots[1] = c.getString(c.getColumnIndex(GameDetailProvider.GAMESCREENSHOTS2));
@@ -747,6 +748,8 @@ public class GameDetail extends Activity {
 
 		mGameDetailViewHolder.tvGamePackageSize
 				.setText(gameInfoDetail.gamePackageSize);
+		
+		setTitle(gameInfoDetail.gameName);
 
 		mGameDetailViewHolder.tvGameType
 				.setText(gameInfoDetail.gameType);

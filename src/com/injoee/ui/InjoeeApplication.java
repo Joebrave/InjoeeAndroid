@@ -19,7 +19,7 @@ public class InjoeeApplication extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		mPushAgent = mPushAgent = PushAgent.getInstance(this);
+		mPushAgent = PushAgent.getInstance(this);
 		
 		UmengMessageHandler messageHandler = new UmengMessageHandler(){
 			@Override
