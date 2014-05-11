@@ -20,6 +20,7 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -385,9 +386,17 @@ public class MainActivity extends Activity implements LazyListViewListener {
 			icon = mSaveOrLoadImageUtility.storeImage(
 					imageHelper.getBitmap(iconTemp), iconTemp,
 					gameInfo.getGameId());
-			values.put(FeaturedGamesListProvider.ICON, icon);
-			getContentResolver().insert(FeaturedGamesListProvider.CONTENT_URI,
+			if(icon != null) {
+				values.put(FeaturedGamesListProvider.ICON, icon);
+			} else {
+				values.put(FeaturedGamesListProvider.ICON, iconTemp);
+			}
+			try {
+				getContentResolver().insert(FeaturedGamesListProvider.CONTENT_URI,
 					values);
+			}catch(SQLException e) {
+				//ignore
+			}
 		}
 	}
 

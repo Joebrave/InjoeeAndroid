@@ -503,7 +503,11 @@ public class LoaderAdapter extends BaseAdapter {
 
 	private ContentObserver mObserver;
 	public void unregisterObserver(ContentObserver observer) {
-		this.mDownloadsCursor.unregisterContentObserver(observer);
+		try {
+			this.mDownloadsCursor.unregisterContentObserver(observer);
+		} catch (IllegalStateException e) {
+			//ignore
+		}
 	}
 	
 	public void registerObserver(ContentObserver observer) {

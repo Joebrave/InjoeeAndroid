@@ -656,8 +656,11 @@ public class GameDetail extends Activity {
 		values.put(GameDetailProvider.GAMEGOODVOTE, gameDetail.gameGoodVote);
 		values.put(GameDetailProvider.GAMEBADVOTE, gameDetail.gameBadVote);
 		values.put(GameDetailProvider.GAMEDESCRIPTION, gameDetail.gameDescription);
-		
-		getContentResolver().insert(GameDetailProvider.CONTENT_URI, values);
+		try {
+			getContentResolver().insert(GameDetailProvider.CONTENT_URI, values);
+		} catch(SQLException e) {
+			//ignore
+		}
 	}
 	
 	private boolean loadLocalGameDetail(String gameID)

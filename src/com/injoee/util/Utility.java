@@ -24,6 +24,7 @@ public class Utility {
 	}
 
 	public String storeImage(Bitmap imageData, String filename, String gameID) {
+		if(imageData == null) return null;
 		// get path to external storage (SD card)
 		String iconsStoragePath = Environment.getExternalStorageDirectory()
 				+ "/Injoee/Bufferpics/" + gameID + "/";

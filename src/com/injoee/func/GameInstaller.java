@@ -76,8 +76,9 @@ public class GameInstaller {
 					}
 				}
 			}
-			
-			mProgressDialog.dismiss();
+			if(mProgressDialog.isShowing()) {
+				mProgressDialog.dismiss();
+			}
 			
 			if(apkFile != null) {
 				installApk(mContext, apkFile);
