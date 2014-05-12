@@ -176,6 +176,7 @@ public class MainActivity extends Activity implements LazyListViewListener {
 			super.onPreExecute();
 			mProgressBar = (ProgressBar) findViewById(R.id.pb_featured_game_progress);
 			mProgressBar.setVisibility(View.VISIBLE);
+			mGameListView.setPullLoadEnable(false); //for the sake of hiding View More 
 		}
 
 		@Override
@@ -223,6 +224,7 @@ public class MainActivity extends Activity implements LazyListViewListener {
 		@Override
 		protected void onPostExecute(List<GameInfo> result) {
 			super.onPostExecute(result);
+			
 
 			if (result != null) {
 				if (mActionTag == LOAD) { // when load or refresh, just clear

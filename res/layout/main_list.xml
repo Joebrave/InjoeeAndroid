@@ -1,5 +1,6 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rl_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/list_gray_background"
@@ -17,13 +18,13 @@
         android:layout_centerVertical="true"
         android:visibility="gone" />
 
+
     <com.injoee.ui.widget.LazyListView
         android:id="@+id/lv_Games"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:divider="@color/list_gray_background"
-        android:dividerHeight="7dp"
-         >
+        android:dividerHeight="7dp" >
     </com.injoee.ui.widget.LazyListView>
 
     <LinearLayout
@@ -33,8 +34,7 @@
         android:layout_below="@id/lv_Games"
         android:layout_centerHorizontal="true"
         android:orientation="vertical"
-        android:visibility="gone"
-         >
+        android:visibility="gone" >
 
         <ImageView
             android:id="@+id/iv_network_disconnected"
@@ -42,16 +42,16 @@
             android:layout_height="180dp"
             android:layout_marginTop="40dp"
             android:background="@drawable/network_disconnected" />
-        <Button 
+
+        <Button
             android:id="@+id/btn_reconnect_internet"
-            android:layout_height="35dp"
             android:layout_width="70dp"
-            android:text="@string/network_retry"
-            android:textColor="@color/white"
-            android:textSize="18sp"
+            android:layout_height="35dp"
             android:layout_gravity="center"
             android:background="@drawable/button_background_download"
-            />
+            android:text="@string/network_retry"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
     </LinearLayout>
 
 </RelativeLayout>

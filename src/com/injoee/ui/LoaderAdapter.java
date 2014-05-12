@@ -204,7 +204,7 @@ public class LoaderAdapter extends BaseAdapter {
 				viewHolder.tvMyGameName = (TextView) convertView
 						.findViewById(R.id.tv_my_game_name);
 				viewHolder.tvMyGameSize = (TextView) convertView
-						.findViewById(R.id.tv_my_game_size);
+						.findViewById(R.id.tv_my_game_size);			
 				viewHolder.ivMyGameIcon = (ImageView) convertView
 						.findViewById(R.id.iv_my_games_icon);
 				viewHolder.btnDeleteGame = (Button) convertView
@@ -227,7 +227,8 @@ public class LoaderAdapter extends BaseAdapter {
 						.findViewById(R.id.tv_featured_game_size);
 				viewHolder.tv_FeaturedGameID = (TextView) convertView
 						.findViewById(R.id.tv_game_id);
-
+				viewHolder.tv_ProgressNum = (TextView) convertView
+						.findViewById(R.id.tv_progress_num);
 				viewHolder.iv_FeaturedGameIcon = (ImageView) convertView
 						.findViewById(R.id.iv_featured_games_icon);
 				viewHolder.btn_Download = (Button) convertView
@@ -305,6 +306,7 @@ public class LoaderAdapter extends BaseAdapter {
 						viewHolder.pb_Download.setIndeterminate(indeterminate);
 						if (!indeterminate) {
 							viewHolder.pb_Download.setProgress(progress);
+							viewHolder.tv_ProgressNum.setText(Integer.toString(progress)+"%");
 						}
 						
 						status = cursor.getInt(this.mStatusColumnId);
@@ -465,6 +467,7 @@ public class LoaderAdapter extends BaseAdapter {
 		TextView tv_FeaturedGameType;
 		TextView tv_FeaturedGameSize;
 		TextView tv_FeaturedGameID;
+		TextView tv_ProgressNum;
 		ImageView iv_FeaturedGameIcon;
 		Button btn_Download;
 		ProgressBar pb_Download;
